@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model
-from .forms import EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
+from .forms import AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
 from .models import *
 
 LIDER = dict(banda__membros__papel="lider")
@@ -307,3 +307,52 @@ def eventos_lista(request):
     agora = timezone.now()
     return render(request, "eventos.html", dict(futuros=qs.filter(data_hora__gte=agora).order_by("data_hora"),
                                                 passados=qs.filter(data_hora__lt=agora).order_by("-data_hora")))
+
+
+# ---------- avisos ----------
+
+def _aviso_lider(request, pk):
+    return get_object_or_404(Aviso, pk=pk, banda__membros__user=request.user, **LIDER)
+
+
+@login_required
+def avisos_lista(request):
+    if not _eh_lider(request.user):
+        return redirect("home")
+    avisos = (Aviso.objects.filter(banda__membros__user=request.user, banda__membros__papel="lider")
+              .select_related("banda", "autor").distinct())
+    return render(request, "avisos.html", dict(avisos=avisos))
+
+
+@login_required
+def aviso_form(request, pk=None):
+    aviso = _aviso_lider(request, pk) if pk else None
+    if not aviso and not _eh_lider(request.user):
+        messages.error(request, "Apenas líderes podem postar avisos.")
+        return redirect("home")
+    form = AvisoForm(request.POST or None, instance=aviso, user=request.user)
+    if request.method == "POST" and form.is_valid():
+        novo = form.save(commit=False)
+        if not aviso:
+            novo.autor = request.user
+        novo.save()
+        messages.success(request, "Aviso salvo!")
+        return redirect("avisos")
+    return render(request, "aviso_form.html", dict(form=form, aviso=aviso))
+
+
+@login_required
+@require_POST
+def aviso_fixar(request, pk):
+    aviso = _aviso_lider(request, pk)
+    aviso.fixado = not aviso.fixado
+    aviso.save(update_fields=["fixado"])
+    return redirect("avisos")
+
+
+@login_required
+@require_POST
+def aviso_excluir(request, pk):
+    _aviso_lider(request, pk).delete()
+    messages.success(request, "Aviso excluído.")
+    return redirect("avisos")

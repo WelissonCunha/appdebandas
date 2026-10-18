@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block content %}
+<style>.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}</style>
+<p><a href="{% url 'aviso_novo' %}"><button>+ Novo aviso</button></a></p>
+{% for a in avisos %}<div class="card">
+<p>{% if a.fixado %}📌 {% endif %}{{ a.texto|linebreaksbr }}</p>
+<p class="mut">{{ a.banda }} · {{ a.autor.first_name|default:a.autor.username }} · {{ a.criado|date:"d/m/Y H:i" }}</p>
+<a href="{% url 'aviso_editar' a.pk %}">✏️ Editar</a>
+<form class="inl" method="post" action="{% url 'aviso_fixar' a.pk %}">{% csrf_token %}<button>{% if a.fixado %}📌 Desafixar{% else %}📌 Fixar{% endif %}</button></form>
+<form class="inl" method="post" action="{% url 'aviso_excluir' a.pk %}" onsubmit="return confirm('Excluir este aviso?')">{% csrf_token %}<button class="no">🗑️ Excluir</button></form></div>
+{% empty %}<p class="mut">Nenhum aviso ainda.</p>{% endfor %}
+{% endblock %}

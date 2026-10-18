@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Banda, Escala, Evento, ItemSetlist, Membro, Musica
+from .models import Aviso, Banda, Escala, Evento, ItemSetlist, Membro, Musica
 
 FMT = "%Y-%m-%dT%H:%M"
 
@@ -83,3 +83,14 @@ class BandaForm(forms.ModelForm):
         model = Banda
         fields = ["nome", "descricao"]
         widgets = {"descricao": forms.Textarea(attrs={"rows": 3})}
+
+
+class AvisoForm(forms.ModelForm):
+    class Meta:
+        model = Aviso
+        fields = ["banda", "texto", "fixado"]
+        widgets = {"texto": forms.Textarea(attrs={"rows": 4})}
+
+    def __init__(self, *a, user=None, **k):
+        super().__init__(*a, **k)
+        self.fields["banda"].queryset = bandas_do_lider(user)
