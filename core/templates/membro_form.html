@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block content %}
+<style>.fm p{margin:0 0 10px}.fm input,.fm select{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}.helptext{display:block;color:var(--mut);font-size:.85rem}</style>
+<div class="card fm"><h2>{% if m %}Editar {{ m.user.get_full_name|default:m.user.username }}{% else %}Adicionar membro{% endif %}</h2>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button>Salvar</button> <a href="{% url 'membros' %}">Cancelar</a></form>
+{% if m %}<form method="post" action="{% url 'membro_excluir' m.pk %}" style="margin-top:14px"
+onsubmit="return confirm('Remover da banda? Ele também sai das escalas dos eventos.')">{% csrf_token %}<button class="no">Remover da banda</button></form>{% endif %}</div>
+{% endblock %}

@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth import get_user_model
 from .models import Banda, Escala, Evento, ItemSetlist, Membro, Musica
 
 FMT = "%Y-%m-%dT%H:%M"
@@ -50,6 +51,27 @@ class MusicaForm(forms.ModelForm):
         model = Musica
         fields = ["banda", "titulo", "artista", "tom", "bpm", "link", "cifra"]
         widgets = {"cifra": forms.Textarea(attrs={"rows": 6})}
+
+    def __init__(self, *a, user=None, **k):
+        super().__init__(*a, **k)
+        self.fields["banda"].queryset = bandas_do_lider(user)
+
+
+class MembroForm(forms.ModelForm):
+    class Meta:
+        model = Membro
+        fields = ["papel", "instrumentos"]
+
+
+class MembroNovoForm(forms.Form):
+    banda = forms.ModelChoiceField(queryset=Banda.objects.none())
+    username = forms.CharField(max_length=150, label="Login",
+                               help_text="Se o login já existir, a pessoa só é adicionada à banda.")
+    nome = forms.CharField(max_length=150, required=False, label="Nome")
+    senha = forms.CharField(widget=forms.PasswordInput, required=False,
+                            help_text="Obrigatória apenas para login novo.")
+    papel = forms.ChoiceField(choices=Membro.PAPEIS)
+    instrumentos = forms.CharField(max_length=200, required=False, help_text="Ex.: Violão, Vocal")
 
     def __init__(self, *a, user=None, **k):
         super().__init__(*a, **k)

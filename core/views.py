@@ -4,7 +4,8 @@ from django.db.models import Max
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from .forms import EscalaForm, EventoForm, MusicaForm, SetlistForm
+from django.contrib.auth import get_user_model
+from .forms import EscalaForm, EventoForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
 from .models import *
 
 LIDER = dict(banda__membros__papel="lider")
@@ -191,3 +192,71 @@ def musica_excluir(request, pk):
     get_object_or_404(Musica, pk=pk, banda__membros__user=request.user, **LIDER).delete()
     messages.success(request, "Música excluída.")
     return redirect("repertorio")
+
+
+# ---------- membros ----------
+
+def _membro_lider(request, pk):
+    return get_object_or_404(Membro, pk=pk, banda__membros__user=request.user, **LIDER)
+
+
+def _ultimo_lider(m):
+    return m.papel == "lider" and not m.banda.membros.filter(papel="lider").exclude(pk=m.pk).exists()
+
+
+@login_required
+def membros(request):
+    if not _eh_lider(request.user):
+        return redirect("home")
+    bandas = (Banda.objects.filter(membros__user=request.user, membros__papel="lider")
+              .prefetch_related("membros__user"))
+    return render(request, "membros.html", dict(bandas=bandas))
+
+
+@login_required
+def membro_novo(request):
+    if not _eh_lider(request.user):
+        return redirect("home")
+    form = MembroNovoForm(request.POST or None, user=request.user)
+    if request.method == "POST" and form.is_valid():
+        d = form.cleaned_data
+        User = get_user_model()
+        u = User.objects.filter(username=d["username"]).first()
+        if not u and not d["senha"]:
+            form.add_error("senha", "Informe uma senha para o novo login.")
+        else:
+            if not u:
+                u = User.objects.create_user(d["username"], first_name=d["nome"], password=d["senha"])
+            _, criado = Membro.objects.get_or_create(
+                user=u, banda=d["banda"], defaults=dict(papel=d["papel"], instrumentos=d["instrumentos"]))
+            if criado:
+                messages.success(request, "Membro adicionado!")
+                return redirect("membros")
+            form.add_error("username", "Essa pessoa já faz parte da banda.")
+    return render(request, "membro_form.html", dict(form=form, m=None))
+
+
+@login_required
+def membro_editar(request, pk):
+    m = _membro_lider(request, pk)
+    form = MembroForm(request.POST or None, instance=m)
+    if request.method == "POST" and form.is_valid():
+        if form.cleaned_data["papel"] != "lider" and _ultimo_lider(m):
+            form.add_error("papel", "A banda precisa de pelo menos um líder.")
+        else:
+            form.save()
+            messages.success(request, "Membro atualizado!")
+            return redirect("membros")
+    return render(request, "membro_form.html", dict(form=form, m=m))
+
+
+@login_required
+@require_POST
+def membro_excluir(request, pk):
+    m = _membro_lider(request, pk)
+    if _ultimo_lider(m):
+        messages.error(request, "Não dá para remover o único líder da banda.")
+    else:
+        m.delete()
+        messages.success(request, "Membro removido.")
+    return redirect("membros")

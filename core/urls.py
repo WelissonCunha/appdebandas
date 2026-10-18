@@ -18,4 +18,8 @@ urlpatterns = [
     path("repertorio/nova/", v.musica_form, name="musica_nova"),
     path("repertorio/<int:pk>/editar/", v.musica_form, name="musica_editar"),
     path("repertorio/<int:pk>/excluir/", v.musica_excluir, name="musica_excluir"),
+    path("membros/", v.membros, name="membros"),
+    path("membros/novo/", v.membro_novo, name="membro_novo"),
+    path("membros/<int:pk>/editar/", v.membro_editar, name="membro_editar"),
+    path("membros/<int:pk>/excluir/", v.membro_excluir, name="membro_excluir"),
 ]
