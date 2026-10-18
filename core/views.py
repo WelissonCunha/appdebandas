@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model
-from .forms import EscalaForm, EventoForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
+from .forms import EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
 from .models import *
 
 LIDER = dict(banda__membros__papel="lider")
@@ -17,6 +17,14 @@ def _bandas(user):
 
 def _eh_lider(user):
     return Membro.objects.filter(user=user, papel="lider").exists()
+
+
+def _pode_criar_banda(user):
+    return _eh_lider(user) or not Membro.objects.filter(user=user).exists()
+
+
+def _banda_lider(request, pk):
+    return get_object_or_404(Banda, pk=pk, membros__user=request.user, membros__papel="lider")
 
 
 def _evento_lider(request, pk):
@@ -33,7 +41,8 @@ def home(request):
     avisos = Aviso.objects.filter(banda__in=bandas).select_related("banda", "autor")[:8]
     indisp = Indisponibilidade.objects.filter(membro__user=request.user, data__gte=agora.date())
     return render(request, "home.html", dict(minhas=minhas, eventos=eventos, avisos=avisos, indisp=indisp,
-                                             eh_lider=_eh_lider(request.user)))
+                                             eh_lider=_eh_lider(request.user),
+                                             pode_criar_banda=_pode_criar_banda(request.user)))
 
 
 @login_required
@@ -102,7 +111,7 @@ def evento_form(request, pk=None):
 def evento_excluir(request, pk):
     _evento_lider(request, pk).delete()
     messages.success(request, "Evento excluído.")
-    return redirect("home")
+    return redirect("eventos")
 
 
 @login_required
@@ -260,3 +269,41 @@ def membro_excluir(request, pk):
         m.delete()
         messages.success(request, "Membro removido.")
     return redirect("membros")
+
+
+# ---------- bandas ----------
+
+@login_required
+def banda_form(request, pk=None):
+    banda = _banda_lider(request, pk) if pk else None
+    if not banda and not _pode_criar_banda(request.user):
+        messages.error(request, "Apenas líderes podem criar bandas.")
+        return redirect("home")
+    form = BandaForm(request.POST or None, instance=banda)
+    if request.method == "POST" and form.is_valid():
+        novo = banda is None
+        banda = form.save()
+        if novo:
+            Membro.objects.create(user=request.user, banda=banda, papel="lider")
+        messages.success(request, "Banda salva!")
+        return redirect("membros")
+    return render(request, "banda_form.html", dict(form=form, banda=banda))
+
+
+@login_required
+@require_POST
+def banda_excluir(request, pk):
+    _banda_lider(request, pk).delete()
+    messages.success(request, "Banda excluída.")
+    return redirect("home")
+
+
+@login_required
+def eventos_lista(request):
+    if not _eh_lider(request.user):
+        return redirect("home")
+    qs = (Evento.objects.filter(banda__membros__user=request.user, banda__membros__papel="lider")
+          .select_related("banda").distinct())
+    agora = timezone.now()
+    return render(request, "eventos.html", dict(futuros=qs.filter(data_hora__gte=agora).order_by("data_hora"),
+                                                passados=qs.filter(data_hora__lt=agora).order_by("-data_hora")))

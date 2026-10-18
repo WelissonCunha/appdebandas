@@ -1,6 +1,8 @@
 {% extends "base.html" %}{% block content %}
-<p><a href="{% url 'membro_novo' %}"><button>+ Adicionar membro</button></a></p>
+<p><a href="{% url 'membro_novo' %}"><button>+ Adicionar membro</button></a>
+<a href="{% url 'banda_nova' %}"><button>+ Nova banda</button></a></p>
 {% for b in bandas %}<div class="card"><h2>👥 {{ b.nome }}</h2>
+<p class="mut">{{ b.descricao }} <a href="{% url 'banda_editar' b.pk %}">✏️ Editar banda</a></p>
 {% for m in b.membros.all %}<p><b>{{ m.user.get_full_name|default:m.user.username }}</b>
 <span class="tag {% if m.papel == 'lider' %}confirmado{% endif %}">{{ m.get_papel_display }}</span><br>
 <span class="mut">@{{ m.user.username }} · {{ m.instrumentos|default:"sem instrumentos" }}</span>

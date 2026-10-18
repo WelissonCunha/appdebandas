@@ -1,5 +1,6 @@
 {% extends "base.html" %}{% block content %}
-{% if eh_lider %}<p><a href="{% url 'evento_novo' %}"><button>+ Novo evento</button></a> <a href="{% url 'musica_nova' %}"><button>+ Nova música</button></a> <a href="{% url 'membros' %}"><button>👥 Membros</button></a></p>{% endif %}
+{% if eh_lider %}<p><a href="{% url 'eventos' %}"><button>📅 Eventos</button></a> <a href="{% url 'repertorio' %}"><button>🎵 Músicas</button></a> <a href="{% url 'membros' %}"><button>👥 Membros</button></a></p>{% endif %}
+{% if pode_criar_banda and not eh_lider %}<div class="card"><h2>Você ainda não tem banda</h2><p><a href="{% url 'banda_nova' %}"><button>+ Criar minha banda</button></a></p></div>{% endif %}
 {% if avisos %}<div class="card"><h2>📢 Avisos</h2>{% for a in avisos %}
 <p>{% if a.fixado %}📌 {% endif %}{{ a.texto }}<br><span class="mut">{{ a.banda }} · {{ a.autor.first_name|default:a.autor.username }} · {{ a.criado|date:"d/m H:i" }}</span></p>{% endfor %}</div>{% endif %}
 <div class="card"><h2>🗓️ Minhas escalas</h2>{% for e in minhas %}

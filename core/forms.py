@@ -76,3 +76,10 @@ class MembroNovoForm(forms.Form):
     def __init__(self, *a, user=None, **k):
         super().__init__(*a, **k)
         self.fields["banda"].queryset = bandas_do_lider(user)
+
+
+class BandaForm(forms.ModelForm):
+    class Meta:
+        model = Banda
+        fields = ["nome", "descricao"]
+        widgets = {"descricao": forms.Textarea(attrs={"rows": 3})}

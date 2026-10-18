@@ -3,6 +3,7 @@ from . import views as v
 
 urlpatterns = [
     path("", v.home, name="home"),
+    path("eventos/", v.eventos_lista, name="eventos"),
     path("evento/novo/", v.evento_form, name="evento_novo"),
     path("evento/<int:pk>/", v.evento, name="evento"),
     path("evento/<int:pk>/editar/", v.evento_form, name="evento_editar"),
@@ -22,4 +23,7 @@ urlpatterns = [
     path("membros/novo/", v.membro_novo, name="membro_novo"),
     path("membros/<int:pk>/editar/", v.membro_editar, name="membro_editar"),
     path("membros/<int:pk>/excluir/", v.membro_excluir, name="membro_excluir"),
+    path("banda/nova/", v.banda_form, name="banda_nova"),
+    path("banda/<int:pk>/editar/", v.banda_form, name="banda_editar"),
+    path("banda/<int:pk>/excluir/", v.banda_excluir, name="banda_excluir"),
 ]

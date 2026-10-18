@@ -2,6 +2,6 @@
 <style>.fm p{margin:0 0 10px}.fm input,.fm select,.fm textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}.inl{display:inline;margin:0}.inl button{padding:2px 8px}.row{display:flex;gap:6px;flex-wrap:wrap}.row>*{flex:1 1 140px}</style>
 <div class="card fm"><h2>{% if ev %}Editar evento{% else %}Novo evento{% endif %}</h2>
 <form method="post">{% csrf_token %}{{ form.as_p }}<button>Salvar</button>
-<a href="{% if ev %}{% url 'evento' ev.pk %}{% else %}{% url 'home' %}{% endif %}">Cancelar</a></form>
+<a href="{% if ev %}{% url 'evento' ev.pk %}{% else %}{% url 'eventos' %}{% endif %}">Cancelar</a></form>
 {% if ev %}<form method="post" action="{% url 'evento_excluir' ev.pk %}" onsubmit="return confirm('Excluir este evento?')" style="margin-top:14px">{% csrf_token %}<button class="no">Excluir evento</button></form>{% endif %}</div>
 {% endblock %}

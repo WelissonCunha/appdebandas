@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block content %}
+<style>.fm p{margin:0 0 10px}.fm input,.fm textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}</style>
+<div class="card fm"><h2>{% if banda %}Editar banda{% else %}Nova banda{% endif %}</h2>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button>Salvar</button> <a href="{% url 'membros' %}">Cancelar</a></form>
+{% if banda %}<form method="post" action="{% url 'banda_excluir' banda.pk %}" style="margin-top:14px"
+onsubmit="return confirm('Excluir a banda {{ banda.nome|escapejs }}? Isso apaga TODOS os eventos, escalas, músicas, avisos e membros dela. Não dá para desfazer.')">{% csrf_token %}<button class="no">Excluir banda</button></form>{% endif %}</div>
+{% endblock %}

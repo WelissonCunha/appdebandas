@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block content %}
+<style>.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}</style>
+<p><a href="{% url 'evento_novo' %}"><button>+ Novo evento</button></a></p>
+<div class="card"><h2>📅 Próximos eventos</h2>
+{% for ev in futuros %}{% include "evento_linha.html" %}{% empty %}<p class="mut">Nenhum evento futuro.</p>{% endfor %}</div>
+{% if passados %}<div class="card"><h2>🕘 Eventos passados</h2>
+{% for ev in passados %}{% include "evento_linha.html" %}{% endfor %}</div>{% endif %}
+{% endblock %}
