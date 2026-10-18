@@ -1,0 +1,22 @@
+<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>{% block title %}Bandas{% endblock %}</title>
+<style>
+:root{--bg:#f6f6f9;--card:#fff;--tx:#1d1d28;--mut:#6b6b7b;--pri:#5b4bdb;--ok:#1a9d5a;--no:#d23b3b}
+@media(prefers-color-scheme:dark){:root{--bg:#14141b;--card:#1f1f2a;--tx:#ececf3;--mut:#9a9aae}}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+nav{background:var(--pri);color:#fff;padding:12px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+nav a{color:#fff;text-decoration:none}nav .sp{flex:1}
+main{max-width:760px;margin:auto;padding:16px}
+.card{background:var(--card);border-radius:12px;padding:14px 16px;margin:0 0 14px;box-shadow:0 1px 3px #0002}
+h2{margin:.2em 0 .6em;font-size:1.1rem}a{color:var(--pri)}.mut{color:var(--mut);font-size:.9rem}
+.tag{padding:2px 8px;border-radius:99px;font-size:.78rem;color:#fff;background:var(--mut)}
+.confirmado{background:var(--ok)}.recusado{background:var(--no)}
+button,input{font:inherit;padding:8px 12px;border-radius:8px;border:1px solid #8884}
+button{background:var(--pri);color:#fff;border:0;cursor:pointer}button.no{background:var(--no)}
+.msg{background:var(--ok);color:#fff;padding:10px;border-radius:8px;margin-bottom:12px}
+</style></head><body>
+<nav><b>🎸 Bandas</b><a href="/">Início</a><a href="{% url 'repertorio' %}">Repertório</a>
+<span class="sp"></span>
+{% if user.is_staff %}<a href="/admin/">Gerenciar</a>{% endif %}
+{% if user.is_authenticated %}<form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button style="background:#0003">Sair</button></form>{% endif %}</nav>
+<main>{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}{% block content %}{% endblock %}</main></body></html>

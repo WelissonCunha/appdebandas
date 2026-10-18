@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% block content %}
+<div class="card"><h2>🎼 Repertório</h2><form><input name="q" value="{{ q }}" placeholder="Buscar música ou artista"> <button>Buscar</button></form></div>
+{% for m in musicas %}<div class="card"><b>{{ m.titulo }}</b> <span class="mut">{{ m.artista }}</span><br>
+<span class="mut">Tom {{ m.tom|default:"—" }} · {{ m.bpm|default:"—" }} bpm</span>{% if m.link %} · <a href="{{ m.link }}" target="_blank">ouvir</a>{% endif %}</div>
+{% empty %}<p class="mut">Nada encontrado.</p>{% endfor %}
+{% endblock %}

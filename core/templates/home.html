@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block content %}
+{% if avisos %}<div class="card"><h2>📢 Avisos</h2>{% for a in avisos %}
+<p>{% if a.fixado %}📌 {% endif %}{{ a.texto }}<br><span class="mut">{{ a.banda }} · {{ a.autor.first_name|default:a.autor.username }} · {{ a.criado|date:"d/m H:i" }}</span></p>{% endfor %}</div>{% endif %}
+<div class="card"><h2>🗓️ Minhas escalas</h2>{% for e in minhas %}
+<p><a href="{% url 'evento' e.evento.pk %}"><b>{{ e.evento.titulo }}</b></a> · {{ e.funcao }}
+<span class="tag {{ e.status }}">{{ e.get_status_display }}</span><br>
+<span class="mut">{{ e.evento.data_hora|date:"D, d/m \à\s H:i" }} · {{ e.membro.banda }}</span></p>
+{% empty %}<p class="mut">Nenhuma escala por enquanto.</p>{% endfor %}</div>
+<div class="card"><h2>Próximos eventos</h2>{% for ev in eventos %}
+<p><a href="{% url 'evento' ev.pk %}">{{ ev.titulo }}</a> <span class="mut">· {{ ev.data_hora|date:"d/m H:i" }} · {{ ev.banda }}</span></p>
+{% empty %}<p class="mut">Sem eventos.</p>{% endfor %}</div>
+<div class="card"><h2>🚫 Não posso nesta data</h2>
+<form method="post" action="{% url 'indisponibilidade' %}">{% csrf_token %}
+<input type="date" name="data" required> <input name="motivo" placeholder="Motivo (opcional)"> <button>Salvar</button></form>
+{% for i in indisp %}<p class="mut">{{ i.data|date:"d/m/Y" }} {{ i.motivo }}</p>{% endfor %}</div>
+{% endblock %}
