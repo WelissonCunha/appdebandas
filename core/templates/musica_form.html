@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block content %}
+<style>.fm p{margin:0 0 10px}.fm input,.fm select,.fm textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}</style>
+<div class="card fm"><h2>{% if mus %}Editar música{% else %}Nova música{% endif %}</h2>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button>Salvar</button> <a href="{% url 'repertorio' %}">Cancelar</a></form>
+{% if mus %}<form method="post" action="{% url 'musica_excluir' mus.pk %}" style="margin-top:14px"
+onsubmit="return confirm('Excluir esta música? Ela também sai dos setlists dos eventos.')">{% csrf_token %}<button class="no">Excluir música</button></form>{% endif %}</div>
+{% endblock %}

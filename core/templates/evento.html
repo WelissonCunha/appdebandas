@@ -1,16 +1,26 @@
 {% extends "base.html" %}{% block content %}
+<style>.fm p{margin:0 0 10px}.fm input,.fm select,.fm textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}.inl{display:inline;margin:0}.inl button{padding:2px 8px}.row{display:flex;gap:6px;flex-wrap:wrap}.row>*{flex:1 1 140px}</style>
 <div class="card"><h2>{{ ev.titulo }}</h2>
-<p>{{ ev.get_tipo_display }} · {{ ev.data_hora|date:"l, d/m/Y \à\s H:i" }}<br>📍 {{ ev.local|default:"—" }}</p><p>{{ ev.descricao }}</p></div>
+<p>{{ ev.get_tipo_display }} · {{ ev.data_hora|date:"l, d/m/Y \à\s H:i" }}<br>📍 {{ ev.local|default:"—" }}</p><p>{{ ev.descricao }}</p>
+{% if eh_lider %}<a href="{% url 'evento_editar' ev.pk %}">✏️ Editar evento</a>{% endif %}</div>
 <div class="card"><h2>👥 Escala</h2>
 {% for e in escalas %}<p><b>{{ e.funcao }}</b>: {{ e.membro.user.first_name|default:e.membro.user.username }}
 <span class="tag {{ e.status }}">{{ e.get_status_display }}</span>{% if e.obs %}<span class="mut"> — {{ e.obs }}</span>{% endif %}
+{% if eh_lider %}<form class="inl" method="post" action="{% url 'escala_del' e.pk %}">{% csrf_token %}<button class="no" title="Remover">✕</button></form>{% endif %}
 {% if e.membro.user == user %}<form method="post" action="{% url 'responder' e.pk %}" style="margin-top:6px">{% csrf_token %}
 <input name="obs" placeholder="Observação (opcional)">
 <button name="acao" value="confirmado">Confirmar</button> <button class="no" name="acao" value="recusado">Não posso</button></form>{% endif %}</p>
-{% empty %}<p class="mut">Escala ainda não definida.</p>{% endfor %}</div>
+{% empty %}<p class="mut">Escala ainda não definida.</p>{% endfor %}
+{% if eh_lider %}<form method="post" action="{% url 'escala_add' ev.pk %}" class="row">{% csrf_token %}
+{{ escala_form.membro }}{{ escala_form.funcao }}<button>+ Escalar</button></form>{% endif %}</div>
 <div class="card"><h2>🎵 Músicas do dia</h2>
 {% for i in setlist %}<p>{{ i.ordem }}. <b>{{ i.musica.titulo }}</b> {% if i.tom_final %}· tom {{ i.tom_final }}{% endif %}
-{% if i.musica.bpm %}· {{ i.musica.bpm }} bpm{% endif %}{% if i.musica.link %} · <a href="{{ i.musica.link }}" target="_blank">ouvir</a>{% endif %}</p>
+{% if i.musica.bpm %}· {{ i.musica.bpm }} bpm{% endif %}{% if i.musica.link %} · <a href="{{ i.musica.link }}" target="_blank">ouvir</a>{% endif %}
+{% if eh_lider %}<form class="inl" method="post" action="{% url 'setlist_mover' i.pk %}">{% csrf_token %}<button name="dir" value="up">↑</button><button name="dir" value="down">↓</button></form>
+<form class="inl" method="post" action="{% url 'setlist_del' i.pk %}">{% csrf_token %}<button class="no">✕</button></form>{% endif %}</p>
 {% if i.musica.cifra %}<pre class="mut" style="overflow:auto">{{ i.musica.cifra }}</pre>{% endif %}
-{% empty %}<p class="mut">Setlist vazio.</p>{% endfor %}</div>
+{% empty %}<p class="mut">Setlist vazio.</p>{% endfor %}
+{% if eh_lider %}<form method="post" action="{% url 'setlist_add' ev.pk %}" class="row">{% csrf_token %}
+{{ setlist_form.musica }}{{ setlist_form.tom }}<button>+ Adicionar</button></form>
+<p class="mut">Tom vazio = tom original da música. <a href="{% url 'musica_nova' %}">Cadastrar nova música</a></p>{% endif %}</div>
 {% endblock %}
