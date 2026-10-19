@@ -5,7 +5,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model
-from .forms import AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib.messages.views import SuccessMessageMixin
+from django.urls import reverse_lazy
+from .forms import SenhaForm, SenhaResetForm, AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
 from .models import *
 
 LIDER = dict(banda__membros__papel="lider")
@@ -370,3 +373,29 @@ def gerenciar(request):
         avisos=Aviso.objects.filter(banda__in=bandas).count(),
     )
     return render(request, "gerenciar.html", dict(bandas=bandas, stats=stats))
+
+
+# ---------- senhas ----------
+
+class AlterarSenhaView(SuccessMessageMixin, PasswordChangeView):
+    template_name = "senha_form.html"
+    form_class = SenhaForm
+    success_url = reverse_lazy("home")
+    success_message = "Senha alterada com sucesso!"
+
+
+@login_required
+def membro_senha(request, pk):
+    m = _membro_lider(request, pk)
+    alvo = m.user
+    if alvo.is_staff or alvo.is_superuser or Membro.objects.filter(user=alvo, papel="lider").exists():
+        messages.error(request, "Não dá para redefinir a senha de líderes ou administradores aqui. "
+                                "Cada um altera a própria em 🔑 Senha.")
+        return redirect("membro_editar", pk=pk)
+    form = SenhaResetForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        alvo.set_password(form.cleaned_data["nova_senha"])
+        alvo.save()
+        messages.success(request, "Senha redefinida. A pessoa foi desconectada e deve entrar com a nova senha.")
+        return redirect("membros")
+    return render(request, "membro_senha.html", dict(form=form, m=m))

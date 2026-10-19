@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block content %}
+<style>.fm p{margin:0 0 10px}.fm input{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}.helptext{display:block;color:var(--mut);font-size:.85rem}</style>
+<p><a href="{% url 'membro_editar' m.pk %}">← Voltar ao membro</a></p>
+<div class="card fm"><h2>🔑 Redefinir senha de {{ m.user.get_full_name|default:m.user.username }}</h2>
+<p class="mut">A pessoa será desconectada e entra com a senha nova. Peça para ela trocar por uma própria em 🔑 Senha.</p>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button>Redefinir</button> <a href="{% url 'membros' %}">Cancelar</a></form></div>
+{% endblock %}

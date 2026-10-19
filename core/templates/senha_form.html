@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block content %}
+<style>.fm p{margin:0 0 10px}.fm input{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}.helptext{display:block;color:var(--mut);font-size:.85rem}</style>
+<div class="card fm"><h2>🔑 Alterar minha senha</h2>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button>Salvar</button> <a href="{% url 'home' %}">Cancelar</a></form></div>
+{% endblock %}

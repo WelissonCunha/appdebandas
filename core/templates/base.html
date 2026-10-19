@@ -19,5 +19,5 @@ button{background:var(--pri);color:#fff;border:0;cursor:pointer}button.no{backgr
 {% usuario_eh_lider as lider_menu %}{% if lider_menu %}<a href="{% url 'gerenciar' %}">Gerenciar</a><a href="{% url 'eventos' %}">Eventos</a><a href="{% url 'repertorio' %}">Músicas</a><a href="{% url 'membros' %}">Membros</a><a href="{% url 'avisos' %}">Avisos</a>{% else %}<a href="{% url 'repertorio' %}">Repertório</a>{% endif %}
 <span class="sp"></span>
 {% if user.is_staff %}<a href="/admin/">Admin (dev)</a>{% endif %}
-{% if user.is_authenticated %}<form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button style="background:#0003">Sair</button></form>{% endif %}</nav>
+{% if user.is_authenticated %}<a href="{% url 'alterar_senha' %}">🔑 Senha</a><form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button style="background:#0003">Sair</button></form>{% endif %}</nav>
 <main>{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}{% block content %}{% endblock %}</main></body></html>
