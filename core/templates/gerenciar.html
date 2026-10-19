@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block content %}
+<style>.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.grid a{text-decoration:none;color:inherit}.grid .card{margin:0;text-align:center}.grid b{font-size:1.6rem;display:block}</style>
+<div class="card"><h2>⚙️ Gerenciar</h2>
+<p class="mut">Bandas que você lidera: {% for b in bandas %}<b style="display:inline;font-size:inherit">{{ b.nome }}</b>{% if not forloop.last %}, {% endif %}{% endfor %}</p></div>
+<div class="grid">
+<a href="{% url 'eventos' %}"><div class="card">📅<b>{{ stats.eventos }}</b>Eventos futuros</div></a>
+<a href="{% url 'repertorio' %}"><div class="card">🎵<b>{{ stats.musicas }}</b>Músicas</div></a>
+<a href="{% url 'membros' %}"><div class="card">👥<b>{{ stats.membros }}</b>Membros e bandas</div></a>
+<a href="{% url 'avisos' %}"><div class="card">📢<b>{{ stats.avisos }}</b>Avisos</div></a>
+</div>
+{% endblock %}

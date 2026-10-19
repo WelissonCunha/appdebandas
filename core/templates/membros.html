@@ -1,4 +1,5 @@
 {% extends "base.html" %}{% block content %}
+<p><a href="{% url 'gerenciar' %}">← Voltar ao Gerenciar</a></p>
 <p><a href="{% url 'membro_novo' %}"><button>+ Adicionar membro</button></a>
 <a href="{% url 'banda_nova' %}"><button>+ Nova banda</button></a></p>
 {% for b in bandas %}<div class="card"><h2>👥 {{ b.nome }}</h2>

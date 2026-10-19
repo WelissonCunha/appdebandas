@@ -356,3 +356,17 @@ def aviso_excluir(request, pk):
     _aviso_lider(request, pk).delete()
     messages.success(request, "Aviso excluído.")
     return redirect("avisos")
+
+
+@login_required
+def gerenciar(request):
+    if not _eh_lider(request.user):
+        return redirect("home")
+    bandas = Banda.objects.filter(membros__user=request.user, membros__papel="lider")
+    stats = dict(
+        eventos=Evento.objects.filter(banda__in=bandas, data_hora__gte=timezone.now()).count(),
+        musicas=Musica.objects.filter(banda__in=bandas).count(),
+        membros=Membro.objects.filter(banda__in=bandas).count(),
+        avisos=Aviso.objects.filter(banda__in=bandas).count(),
+    )
+    return render(request, "gerenciar.html", dict(bandas=bandas, stats=stats))
