@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from .decorators import login_required
 from django.db.models import Max
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -239,6 +239,7 @@ def membro_novo(request):
         else:
             if not u:
                 u = User.objects.create_user(d["username"], first_name=d["nome"], password=d["senha"])
+                Perfil.objects.update_or_create(user=u, defaults={"trocar_senha": True})
             _, criado = Membro.objects.get_or_create(
                 user=u, banda=d["banda"], defaults=dict(papel=d["papel"], instrumentos=d["instrumentos"]))
             if criado:
@@ -383,6 +384,16 @@ class AlterarSenhaView(SuccessMessageMixin, PasswordChangeView):
     success_url = reverse_lazy("home")
     success_message = "Senha alterada com sucesso!"
 
+    def get_context_data(self, **kw):
+        ctx = super().get_context_data(**kw)
+        ctx["forcado"] = Perfil.objects.filter(user=self.request.user, trocar_senha=True).exists()
+        return ctx
+
+    def form_valid(self, form):
+        resp = super().form_valid(form)
+        Perfil.objects.filter(user=self.request.user).update(trocar_senha=False)
+        return resp
+
 
 @login_required
 def membro_senha(request, pk):
@@ -396,6 +407,7 @@ def membro_senha(request, pk):
     if request.method == "POST" and form.is_valid():
         alvo.set_password(form.cleaned_data["nova_senha"])
         alvo.save()
+        Perfil.objects.update_or_create(user=alvo, defaults={"trocar_senha": True})
         messages.success(request, "Senha redefinida. A pessoa foi desconectada e deve entrar com a nova senha.")
         return redirect("membros")
     return render(request, "membro_senha.html", dict(form=form, m=m))

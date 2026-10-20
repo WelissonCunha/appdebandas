@@ -102,3 +102,12 @@ class Indisponibilidade(models.Model):
 
     class Meta:
         ordering = ["data"]
+
+
+class Perfil(models.Model):
+    """Dados extras do usuário; trocar_senha força a troca no próximo acesso."""
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="perfil")
+    trocar_senha = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Perfil de {self.user}"

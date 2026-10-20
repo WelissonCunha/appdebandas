@@ -102,6 +102,8 @@ class SenhaForm(PasswordChangeForm):
         s = self.cleaned_data["new_password1"]
         if len(s) < 8:
             raise forms.ValidationError("Use pelo menos 8 caracteres.")
+        if s == self.cleaned_data.get("old_password"):
+            raise forms.ValidationError("A nova senha deve ser diferente da atual.")
         return s
 
 
