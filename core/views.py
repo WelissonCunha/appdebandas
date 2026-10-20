@@ -528,3 +528,11 @@ def troca_cancelar(request, pk):
         t.save()
         messages.success(request, "Pedido cancelado.")
     return redirect("trocas")
+
+
+@login_required
+def evento_exportar(request, pk):
+    ev = get_object_or_404(Evento, pk=pk, banda__in=_bandas(request.user))
+    return render(request, "evento_exportar.html", dict(ev=ev, escalas=ev.escalas.select_related("membro__user"),
+                                                        setlist=ev.setlist.select_related("musica"),
+                                                        gerado=timezone.localtime()))

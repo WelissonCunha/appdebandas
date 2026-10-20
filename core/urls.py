@@ -10,6 +10,7 @@ urlpatterns = [
     path("avisos/<int:pk>/fixar/", v.aviso_fixar, name="aviso_fixar"),
     path("avisos/<int:pk>/excluir/", v.aviso_excluir, name="aviso_excluir"),
     path("eventos/", v.eventos_lista, name="eventos"),
+    path("evento/<int:pk>/exportar/", v.evento_exportar, name="evento_exportar"),
     path("evento/novo/", v.evento_form, name="evento_novo"),
     path("evento/<int:pk>/", v.evento, name="evento"),
     path("evento/<int:pk>/editar/", v.evento_form, name="evento_editar"),

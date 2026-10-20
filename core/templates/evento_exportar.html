@@ -1,0 +1,51 @@
+{% extends "base.html" %}{% block content %}
+<p><a href="{% url 'evento' ev.pk %}">← Voltar ao evento</a></p>
+<div class="card"><h2>📤 Exportar escala</h2>
+<button id="b-png" disabled>🖼️ Baixar imagem (PNG)</button> <button id="b-pdf" disabled>📄 Baixar PDF</button>
+<p class="mut" id="status">Preparando o arquivo... (precisa de internet na primeira vez)</p></div>
+<div style="overflow:auto">
+<div id="cartao" style="width:640px;background:#fff;color:#1d1d28;font-family:system-ui,Arial,sans-serif;padding:28px;border-radius:12px">
+  <div style="font-size:13px;color:#5b4bdb;font-weight:700">{{ ev.banda.nome }} · {{ ev.get_tipo_display }}</div>
+  <div style="font-size:26px;font-weight:800;margin:4px 0">{{ ev.titulo }}</div>
+  <div style="font-size:15px;color:#555">📅 {{ ev.data_hora|date:"l, d/m/Y \à\s H:i" }}{% if ev.local %}<br>📍 {{ ev.local }}{% endif %}</div>
+  <div style="font-size:17px;font-weight:700;margin:22px 0 8px;border-bottom:2px solid #5b4bdb;padding-bottom:4px">👥 Escala</div>
+  {% for e in escalas %}<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee;font-size:15px">
+    <span><b>{{ e.funcao }}</b> — {{ e.membro.user.first_name|default:e.membro.user.username }}</span>
+    <span style="color:{% if e.status == 'confirmado' %}#1a9d5a{% elif e.status == 'recusado' %}#d23b3b{% else %}#888{% endif %}">{{ e.get_status_display }}</span></div>
+  {% empty %}<div style="color:#888;font-size:14px">Escala ainda não definida.</div>{% endfor %}
+  <div style="font-size:17px;font-weight:700;margin:22px 0 8px;border-bottom:2px solid #5b4bdb;padding-bottom:4px">🎵 Músicas</div>
+  {% for i in setlist %}<div style="padding:6px 0;border-bottom:1px solid #eee;font-size:15px">{{ i.ordem }}. <b>{{ i.musica.titulo }}</b>{% if i.tom_final %} · tom {{ i.tom_final }}{% endif %}{% if i.musica.bpm %} · {{ i.musica.bpm }} bpm{% endif %}</div>
+  {% empty %}<div style="color:#888;font-size:14px">Setlist vazio.</div>{% endfor %}
+  <div style="font-size:11px;color:#999;margin-top:18px">Gerado em {{ gerado|date:"d/m/Y H:i" }}</div>
+</div></div>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" onerror="falhou()"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" onerror="falhou()"></script>
+<script>
+const nome = "escala-{{ ev.titulo|slugify }}-{{ ev.data_hora|date:'Y-m-d' }}";
+const st = document.getElementById("status"), bpng = document.getElementById("b-png"), bpdf = document.getElementById("b-pdf");
+let cartao = null;
+function falhou() { st.textContent = "Não foi possível carregar o gerador. Verifique a internet e recarregue a página."; }
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    if (document.fonts) await document.fonts.ready;
+    cartao = await html2canvas(document.getElementById("cartao"), {scale: 2, backgroundColor: "#ffffff"});
+    bpng.disabled = bpdf.disabled = false;
+    st.textContent = "Pronto! Escolha o formato.";
+  } catch (e) { falhou(); }
+});
+function baixar(blob, arquivo) {
+  const u = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = u; a.download = arquivo; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 2000);
+}
+bpng.onclick = () => cartao.toBlob(b => baixar(b, nome + ".png"), "image/png");
+bpdf.onclick = () => {
+  const pdf = new window.jspdf.jsPDF({unit: "pt", format: "a4"});
+  const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
+  let w = pw - 48, h = cartao.height * w / cartao.width;
+  if (h > ph - 48) { w = w * (ph - 48) / h; h = ph - 48; }
+  pdf.addImage(cartao.toDataURL("image/jpeg", 0.92), "JPEG", (pw - w) / 2, 24, w, h);
+  pdf.save(nome + ".pdf");
+};
+</script>
+{% endblock %}

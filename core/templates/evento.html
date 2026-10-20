@@ -2,7 +2,8 @@
 <style>.fm p{margin:0 0 10px}.fm input,.fm select,.fm textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}.inl{display:inline;margin:0}.inl button{padding:2px 8px}.row{display:flex;gap:6px;flex-wrap:wrap}.row>*{flex:1 1 140px}</style>
 <div class="card"><h2>{{ ev.titulo }}</h2>
 <p>{{ ev.get_tipo_display }} · {{ ev.data_hora|date:"l, d/m/Y \à\s H:i" }}<br>📍 {{ ev.local|default:"—" }}</p><p>{{ ev.descricao }}</p>
-{% if eh_lider %}<a href="{% url 'evento_editar' ev.pk %}">✏️ Editar evento</a>{% endif %}</div>
+{% if eh_lider %}<a href="{% url 'evento_editar' ev.pk %}">✏️ Editar evento</a>{% endif %}
+<a href="{% url 'evento_exportar' ev.pk %}">📤 Exportar escala</a></div>
 <div class="card"><h2>👥 Escala</h2>
 {% for e in escalas %}<p><b>{{ e.funcao }}</b>: {{ e.membro.user.first_name|default:e.membro.user.username }}
 <span class="tag {{ e.status }}">{{ e.get_status_display }}</span>{% if e.obs %}<span class="mut"> — {{ e.obs }}</span>{% endif %}
