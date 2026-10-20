@@ -6,7 +6,8 @@
 <div class="grid">
 <a href="{% url 'eventos' %}"><div class="card">📅<b>{{ stats.eventos }}</b>Eventos futuros</div></a>
 <a href="{% url 'repertorio' %}"><div class="card">🎵<b>{{ stats.musicas }}</b>Músicas</div></a>
-<a href="{% url 'membros' %}"><div class="card">👥<b>{{ stats.membros }}</b>Membros e bandas</div></a>
+<a href="{% url 'bandas' %}"><div class="card">🎸<b>{{ stats.bandas }}</b>Bandas</div></a>
+<a href="{% url 'membros' %}"><div class="card">👥<b>{{ stats.membros }}</b>Membros</div></a>
 <a href="{% url 'avisos' %}"><div class="card">📢<b>{{ stats.avisos }}</b>Avisos</div></a>
 <a href="{% url 'trocas' %}"><div class="card">🔄<b>{{ stats.trocas }}</b>Trocas abertas</div></a>
 </div>

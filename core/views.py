@@ -2,7 +2,7 @@ from django.contrib import messages
 from .decorators import login_required
 from datetime import timedelta
 from django.db import transaction
-from django.db.models import Exists, Max, OuterRef, Q
+from django.db.models import Count, Exists, Max, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -295,7 +295,7 @@ def banda_form(request, pk=None):
         if novo:
             Membro.objects.create(user=request.user, banda=banda, papel="lider")
         messages.success(request, "Banda salva!")
-        return redirect("membros")
+        return redirect("bandas")
     return render(request, "banda_form.html", dict(form=form, banda=banda))
 
 
@@ -304,7 +304,7 @@ def banda_form(request, pk=None):
 def banda_excluir(request, pk):
     _banda_lider(request, pk).delete()
     messages.success(request, "Banda excluída.")
-    return redirect("home")
+    return redirect("bandas")
 
 
 @login_required
@@ -376,6 +376,7 @@ def gerenciar(request):
         eventos=Evento.objects.filter(banda__in=bandas, data_hora__gte=timezone.now()).count(),
         musicas=Musica.objects.filter(banda__in=bandas).count(),
         membros=Membro.objects.filter(banda__in=bandas).count(),
+        bandas=bandas.count(),
         avisos=Aviso.objects.filter(banda__in=bandas).count(),
         trocas=TrocaEscala.objects.filter(status="aberta", escala__evento__banda__in=bandas,
                                           escala__evento__data_hora__gte=timezone.now()).count(),
@@ -549,3 +550,13 @@ def minhas_escalas(request):
     passadas = qs.filter(evento__data_hora__lt=agora).order_by("-evento__data_hora")[:20]
     return render(request, "minhas_escalas.html", dict(
         proximas=proximas, passadas=passadas, pendentes=proximas.filter(status="pendente").count()))
+
+
+@login_required
+def bandas_lista(request):
+    if not _eh_lider(request.user):
+        return redirect("home")
+    bandas = (Banda.objects.filter(membros__user=request.user, membros__papel="lider")
+              .annotate(n_membros=Count("membros", distinct=True), n_eventos=Count("eventos", distinct=True),
+                        n_musicas=Count("musicas", distinct=True)).order_by("nome"))
+    return render(request, "bandas.html", dict(bandas=bandas))

@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% block content %}
+<style>.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}</style>
+<p><a href="{% url 'gerenciar' %}">← Voltar ao Gerenciar</a></p>
+<p><a href="{% url 'banda_nova' %}"><button>+ Nova banda</button></a></p>
+{% for b in bandas %}<div class="card"><h2>🎸 {{ b.nome }}</h2>
+{% if b.descricao %}<p class="mut">{{ b.descricao }}</p>{% endif %}
+<p class="mut">{{ b.n_membros }} membro(s) · {{ b.n_eventos }} evento(s) · {{ b.n_musicas }} música(s)</p>
+<a href="{% url 'banda_editar' b.pk %}">✏️ Editar</a> · <a href="{% url 'membros' %}">👥 Ver membros</a>
+<form class="inl" method="post" action="{% url 'banda_excluir' b.pk %}"
+onsubmit="return confirm('Excluir a banda {{ b.nome|escapejs }}? Isso apaga TODOS os eventos, escalas, músicas, avisos e membros dela. Não dá para desfazer.')">{% csrf_token %}<button class="no">🗑️ Excluir</button></form></div>
+{% empty %}<p class="mut">Você ainda não lidera nenhuma banda.</p>{% endfor %}
+{% endblock %}

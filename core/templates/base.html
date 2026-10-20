@@ -14,10 +14,12 @@ h2{margin:.2em 0 .6em;font-size:1.1rem}a{color:var(--pri)}.mut{color:var(--mut);
 button,input{font:inherit;padding:8px 12px;border-radius:8px;border:1px solid #8884}
 button{background:var(--pri);color:#fff;border:0;cursor:pointer}button.no{background:var(--no)}
 .msg{background:var(--ok);color:#fff;padding:10px;border-radius:8px;margin-bottom:12px}
+details.dd{position:relative}details.dd summary{cursor:pointer;list-style:none;user-select:none}details.dd summary::-webkit-details-marker{display:none}.dd-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:180px;background:var(--card);color:var(--tx);border-radius:10px;box-shadow:0 4px 16px #0004;padding:6px;z-index:20;display:flex;flex-direction:column}.dd-menu a{color:var(--tx);padding:9px 12px;border-radius:6px;white-space:nowrap}.dd-menu a:hover{background:var(--bg)}
 </style></head><body>
 <nav><b>🎸 Bandas</b><a href="/">Início</a><a href="{% url 'minhas_escalas' %}">📅 Minhas escalas</a><a href="{% url 'trocas' %}">🔄 Trocas</a>
-{% usuario_eh_lider as lider_menu %}{% if lider_menu %}<a href="{% url 'gerenciar' %}">Gerenciar</a><a href="{% url 'eventos' %}">Eventos</a><a href="{% url 'repertorio' %}">Músicas</a><a href="{% url 'membros' %}">Membros</a><a href="{% url 'avisos' %}">Avisos</a>{% else %}<a href="{% url 'repertorio' %}">Repertório</a>{% endif %}
+<a href="{% url 'repertorio' %}">Repertório</a>
+{% usuario_eh_lider as lider_menu %}{% if lider_menu %}<details class="dd"><summary>⚙️ Gerenciar ▾</summary><div class="dd-menu"><a href="{% url 'gerenciar' %}">📊 Painel</a><a href="{% url 'eventos' %}">📅 Eventos</a><a href="{% url 'repertorio' %}">🎵 Músicas</a><a href="{% url 'bandas' %}">🎸 Bandas</a><a href="{% url 'membros' %}">👥 Membros</a><a href="{% url 'avisos' %}">📢 Avisos</a></div></details>{% endif %}
 <span class="sp"></span>
 {% if user.is_staff %}<a href="/admin/">Admin (dev)</a>{% endif %}
 {% if user.is_authenticated %}<a href="{% url 'alterar_senha' %}">🔑 Senha</a><form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button style="background:#0003">Sair</button></form>{% endif %}</nav>
-<main>{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}{% block content %}{% endblock %}</main></body></html>
+<main>{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}{% block content %}{% endblock %}</main><script>document.addEventListener("click",function(e){document.querySelectorAll("details.dd[open]").forEach(function(d){if(!d.contains(e.target))d.removeAttribute("open")})});</script></body></html>

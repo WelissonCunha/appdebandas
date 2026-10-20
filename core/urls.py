@@ -37,6 +37,7 @@ urlpatterns = [
     path("membros/novo/", v.membro_novo, name="membro_novo"),
     path("membros/<int:pk>/editar/", v.membro_editar, name="membro_editar"),
     path("membros/<int:pk>/excluir/", v.membro_excluir, name="membro_excluir"),
+    path("bandas/", v.bandas_lista, name="bandas"),
     path("banda/nova/", v.banda_form, name="banda_nova"),
     path("banda/<int:pk>/editar/", v.banda_form, name="banda_editar"),
     path("banda/<int:pk>/excluir/", v.banda_excluir, name="banda_excluir"),
