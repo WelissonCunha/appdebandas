@@ -111,3 +111,20 @@ class Perfil(models.Model):
 
     def __str__(self):
         return f"Perfil de {self.user}"
+
+
+class TrocaEscala(models.Model):
+    STATUS = [("aberta", "Aberta"), ("aceita", "Aceita"), ("cancelada", "Cancelada")]
+    escala = models.ForeignKey(Escala, on_delete=models.CASCADE, related_name="trocas")
+    solicitante = models.ForeignKey(Membro, on_delete=models.CASCADE, related_name="trocas_pedidas")
+    destinatario = models.ForeignKey(Membro, null=True, blank=True, on_delete=models.CASCADE,
+                                     related_name="trocas_recebidas", help_text="Vazio = qualquer membro da banda")
+    substituto = models.ForeignKey(Membro, null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name="trocas_aceitas")
+    motivo = models.CharField(max_length=200, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS, default="aberta")
+    criado = models.DateTimeField(auto_now_add=True)
+    resolvida = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-criado"]

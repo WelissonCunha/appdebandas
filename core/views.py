@@ -1,6 +1,8 @@
 from django.contrib import messages
 from .decorators import login_required
-from django.db.models import Max
+from datetime import timedelta
+from django.db import transaction
+from django.db.models import Max, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -8,7 +10,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.views import PasswordChangeView
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
-from .forms import SenhaForm, SenhaResetForm, AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
+from .forms import TrocaForm, SenhaForm, SenhaResetForm, AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
 from .models import *
 
 LIDER = dict(banda__membros__papel="lider")
@@ -45,7 +47,8 @@ def home(request):
     indisp = Indisponibilidade.objects.filter(membro__user=request.user, data__gte=agora.date())
     return render(request, "home.html", dict(minhas=minhas, eventos=eventos, avisos=avisos, indisp=indisp,
                                              eh_lider=_eh_lider(request.user),
-                                             pode_criar_banda=_pode_criar_banda(request.user)))
+                                             pode_criar_banda=_pode_criar_banda(request.user),
+                                             trocas_info=_trocas_info(request.user)))
 
 
 @login_required
@@ -372,6 +375,8 @@ def gerenciar(request):
         musicas=Musica.objects.filter(banda__in=bandas).count(),
         membros=Membro.objects.filter(banda__in=bandas).count(),
         avisos=Aviso.objects.filter(banda__in=bandas).count(),
+        trocas=TrocaEscala.objects.filter(status="aberta", escala__evento__banda__in=bandas,
+                                          escala__evento__data_hora__gte=timezone.now()).count(),
     )
     return render(request, "gerenciar.html", dict(bandas=bandas, stats=stats))
 
@@ -411,3 +416,115 @@ def membro_senha(request, pk):
         messages.success(request, "Senha redefinida. A pessoa foi desconectada e deve entrar com a nova senha.")
         return redirect("membros")
     return render(request, "membro_senha.html", dict(form=form, m=m))
+
+
+# ---------- troca de escala ----------
+
+def _membro_na_banda(user, banda):
+    return Membro.objects.filter(user=user, banda=banda).first()
+
+
+def _pode_cobrir(t, m):
+    """Devolve None se o membro m pode assumir a troca t; senão, o motivo."""
+    ev = t.escala.evento
+    if t.status != "aberta":
+        return "Este pedido não está mais aberto."
+    if ev.data_hora <= timezone.now():
+        return "O evento já passou."
+    if m is None or m.banda_id != ev.banda_id:
+        return "Você não faz parte desta banda."
+    if m.pk == t.solicitante_id:
+        return "Foi você quem pediu."
+    if t.destinatario_id and t.destinatario_id != m.pk:
+        return "Pedido direcionado a outra pessoa."
+    if ev.escalas.filter(membro=m).exists():
+        return "Você já está escalado neste evento."
+    if Indisponibilidade.objects.filter(membro=m, data=timezone.localtime(ev.data_hora).date()).exists():
+        return "Você marcou indisponibilidade nesta data."
+    return None
+
+
+def _trocas_info(user):
+    if not _eh_lider(user):
+        return None
+    qs = TrocaEscala.objects.filter(escala__evento__banda__membros__user=user,
+                                    escala__evento__banda__membros__papel="lider")
+    agora = timezone.now()
+    abertas = qs.filter(status="aberta", escala__evento__data_hora__gte=agora).distinct().count()
+    aceitas = qs.filter(status="aceita", resolvida__gte=agora - timedelta(days=7)).distinct().count()
+    return dict(abertas=abertas, aceitas=aceitas) if abertas or aceitas else None
+
+
+@login_required
+def troca_pedir(request, pk):
+    esc = get_object_or_404(Escala.objects.select_related("evento__banda", "membro__user"),
+                            pk=pk, membro__user=request.user)
+    if esc.evento.data_hora <= timezone.now():
+        messages.error(request, "Esse evento já passou.")
+        return redirect("home")
+    if esc.trocas.filter(status="aberta").exists():
+        messages.error(request, "Você já tem um pedido de troca aberto para esta escala.")
+        return redirect("trocas")
+    form = TrocaForm(request.POST or None, escala=esc)
+    if request.method == "POST" and form.is_valid():
+        t = form.save(commit=False)
+        t.escala, t.solicitante = esc, esc.membro
+        t.save()
+        messages.success(request, "Pedido de troca enviado! O líder é avisado quando alguém aceitar.")
+        return redirect("trocas")
+    return render(request, "troca_form.html", dict(form=form, esc=esc))
+
+
+@login_required
+def trocas(request):
+    base = TrocaEscala.objects.select_related("escala__evento__banda", "escala__membro__user",
+                                              "solicitante__user", "destinatario__user", "substituto__user")
+    abertas = (base.filter(status="aberta", escala__evento__data_hora__gte=timezone.now(),
+                           escala__evento__banda__membros__user=request.user)
+               .exclude(solicitante__user=request.user)
+               .filter(Q(destinatario__isnull=True) | Q(destinatario__user=request.user))
+               .distinct().order_by("escala__evento__data_hora"))
+    para_mim = [dict(t=t, motivo=_pode_cobrir(t, _membro_na_banda(request.user, t.escala.evento.banda)))
+                for t in abertas]
+    minhas = base.filter(solicitante__user=request.user).order_by("-criado")[:15]
+    lider = None
+    if _eh_lider(request.user):
+        lider = (base.filter(escala__evento__banda__membros__user=request.user,
+                             escala__evento__banda__membros__papel="lider")
+                 .distinct().order_by("-criado")[:30])
+    return render(request, "trocas.html", dict(para_mim=para_mim, minhas=minhas, lider=lider))
+
+
+@login_required
+@require_POST
+def troca_aceitar(request, pk):
+    with transaction.atomic():
+        t = get_object_or_404(TrocaEscala.objects.select_for_update(), pk=pk)
+        ev = t.escala.evento
+        m = _membro_na_banda(request.user, ev.banda)
+        erro = _pode_cobrir(t, m)
+        if erro:
+            messages.error(request, erro)
+            return redirect("trocas")
+        esc = t.escala
+        esc.membro, esc.status, esc.obs = m, "confirmado", "Cobrindo troca"
+        esc.save()
+        t.status, t.substituto, t.resolvida = "aceita", m, timezone.now()
+        t.save()
+    messages.success(request, f"Você assumiu {esc.funcao} em {ev.titulo}!")
+    return redirect("trocas")
+
+
+@login_required
+@require_POST
+def troca_cancelar(request, pk):
+    t = get_object_or_404(TrocaEscala, pk=pk, status="aberta")
+    dono = t.solicitante.user_id == request.user.id
+    lider = t.escala.evento.banda.membros.filter(user=request.user, papel="lider").exists()
+    if not (dono or lider):
+        messages.error(request, "Você não pode cancelar este pedido.")
+    else:
+        t.status, t.resolvida = "cancelada", timezone.now()
+        t.save()
+        messages.success(request, "Pedido cancelado.")
+    return redirect("trocas")

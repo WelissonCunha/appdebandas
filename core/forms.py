@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import PasswordChangeForm
-from .models import Aviso, Banda, Escala, Evento, ItemSetlist, Membro, Musica
+from .models import Aviso, Banda, TrocaEscala, Escala, Evento, ItemSetlist, Membro, Musica
 
 FMT = "%Y-%m-%dT%H:%M"
 
@@ -117,3 +117,19 @@ class SenhaResetForm(forms.Form):
         if d.get("nova_senha") and d.get("nova_senha") != d.get("confirmar"):
             self.add_error("confirmar", "As senhas não coincidem.")
         return d
+
+
+class TrocaForm(forms.ModelForm):
+    class Meta:
+        model = TrocaEscala
+        fields = ["destinatario", "motivo"]
+        widgets = {"motivo": forms.TextInput(attrs={"placeholder": "Motivo (opcional)"})}
+
+    def __init__(self, *a, escala, **k):
+        super().__init__(*a, **k)
+        f = self.fields["destinatario"]
+        f.queryset = (Membro.objects.filter(banda=escala.evento.banda).exclude(pk=escala.membro_id)
+                      .select_related("user"))
+        f.empty_label = "Qualquer membro da banda"
+        f.label = "Quem vai cobrir?"
+        f.label_from_instance = lambda m: m.user.get_full_name() or m.user.username

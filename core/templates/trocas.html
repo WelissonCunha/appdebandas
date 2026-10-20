@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% block content %}
+<style>.fm p{margin:0 0 10px}.fm input,.fm select{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}</style>
+{% if lider is not None %}<p><a href="{% url 'gerenciar' %}">← Voltar ao Gerenciar</a></p>{% endif %}
+<div class="card"><h2>🙋 Pedidos para você cobrir</h2>
+{% for i in para_mim %}{% with t=i.t %}<p><b>{{ t.solicitante.user.get_full_name|default:t.solicitante.user.username }}</b> · {{ t.escala.funcao }} em <a href="{% url 'evento' t.escala.evento.pk %}">{{ t.escala.evento.titulo }}</a> ({{ t.escala.evento.data_hora|date:"d/m H:i" }})
+{% if t.motivo %}<br><span class="mut">Motivo: {{ t.motivo }}</span>{% endif %}<br>
+{% if i.motivo %}<span class="mut">Não dá para aceitar: {{ i.motivo }}</span>
+{% else %}<form class="inl" method="post" action="{% url 'troca_aceitar' t.pk %}" style="margin:0" onsubmit="return confirm('Assumir esta escala?')">{% csrf_token %}<button>✅ Aceitar</button></form>{% endif %}</p>{% endwith %}
+{% empty %}<p class="mut">Nenhum pedido no momento.</p>{% endfor %}</div>
+<div class="card"><h2>🔄 Meus pedidos</h2>
+{% for t in minhas %}<p>{{ t.escala.funcao }} em {{ t.escala.evento.titulo }} ({{ t.escala.evento.data_hora|date:"d/m H:i" }})
+<span class="tag {% if t.status == 'aceita' %}confirmado{% elif t.status == 'cancelada' %}recusado{% endif %}">{{ t.get_status_display }}</span>
+{% if t.substituto %}<br><span class="mut">Quem assumiu: {{ t.substituto.user.get_full_name|default:t.substituto.user.username }}</span>{% elif t.destinatario %}<br><span class="mut">Pedido para {{ t.destinatario.user.get_full_name|default:t.destinatario.user.username }}</span>{% endif %}
+{% if t.status == 'aberta' %}<form class="inl" method="post" action="{% url 'troca_cancelar' t.pk %}">{% csrf_token %}<button class="no">Cancelar pedido</button></form>{% endif %}</p>
+{% empty %}<p class="mut">Você ainda não pediu trocas.</p>{% endfor %}</div>
+{% if lider is not None %}<div class="card"><h2>📋 Trocas nas bandas que você lidera</h2>
+{% for t in lider %}<p><b>{{ t.solicitante.user.get_full_name|default:t.solicitante.user.username }}</b> · {{ t.escala.funcao }} em <a href="{% url 'evento' t.escala.evento.pk %}">{{ t.escala.evento.titulo }}</a> ({{ t.escala.evento.data_hora|date:"d/m H:i" }}) <span class="tag {% if t.status == 'aceita' %}confirmado{% elif t.status == 'cancelada' %}recusado{% endif %}">{{ t.get_status_display }}</span>
+{% if t.substituto %}<br><span class="mut">Assumiu: {{ t.substituto.user.get_full_name|default:t.substituto.user.username }} · {{ t.resolvida|date:"d/m H:i" }}</span>{% endif %}
+{% if t.status == 'aberta' %}<form class="inl" method="post" action="{% url 'troca_cancelar' t.pk %}">{% csrf_token %}<button class="no">Cancelar</button></form>{% endif %}</p>
+{% empty %}<p class="mut">Nenhuma troca registrada.</p>{% endfor %}</div>{% endif %}
+{% endblock %}

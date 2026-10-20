@@ -9,7 +9,7 @@
 {% if eh_lider %}<form class="inl" method="post" action="{% url 'escala_del' e.pk %}">{% csrf_token %}<button class="no" title="Remover">✕</button></form>{% endif %}
 {% if e.membro.user == user %}<form method="post" action="{% url 'responder' e.pk %}" style="margin-top:6px">{% csrf_token %}
 <input name="obs" placeholder="Observação (opcional)">
-<button name="acao" value="confirmado">Confirmar</button> <button class="no" name="acao" value="recusado">Não posso</button></form>{% endif %}</p>
+<button name="acao" value="confirmado">Confirmar</button> <button class="no" name="acao" value="recusado">Não posso</button> <a href="{% url 'troca_pedir' e.pk %}">🔄 Pedir troca</a></form>{% endif %}</p>
 {% empty %}<p class="mut">Escala ainda não definida.</p>{% endfor %}
 {% if eh_lider %}<form method="post" action="{% url 'escala_add' ev.pk %}" class="row">{% csrf_token %}
 {{ escala_form.membro }}{{ escala_form.funcao }}<button>+ Escalar</button></form>{% endif %}</div>

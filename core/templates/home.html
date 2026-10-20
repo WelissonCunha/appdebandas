@@ -1,11 +1,13 @@
 {% extends "base.html" %}{% block content %}
+{% if trocas_info %}<div class="card"><h2>🔄 Trocas de escala</h2>
+<p>{% if trocas_info.abertas %}{{ trocas_info.abertas }} pedido(s) aberto(s). {% endif %}{% if trocas_info.aceitas %}{{ trocas_info.aceitas }} troca(s) aceita(s) nos últimos 7 dias. {% endif %}<a href="{% url 'trocas' %}">Ver trocas</a></p></div>{% endif %}
 {% if pode_criar_banda and not eh_lider %}<div class="card"><h2>Você ainda não tem banda</h2><p><a href="{% url 'banda_nova' %}"><button>+ Criar minha banda</button></a></p></div>{% endif %}
 {% if avisos %}<div class="card"><h2>📢 Avisos</h2>{% for a in avisos %}
 <p>{% if a.fixado %}📌 {% endif %}{{ a.texto }}<br><span class="mut">{{ a.banda }} · {{ a.autor.first_name|default:a.autor.username }} · {{ a.criado|date:"d/m H:i" }}</span></p>{% endfor %}</div>{% endif %}
 <div class="card"><h2>🗓️ Minhas escalas</h2>{% for e in minhas %}
 <p><a href="{% url 'evento' e.evento.pk %}"><b>{{ e.evento.titulo }}</b></a> · {{ e.funcao }}
 <span class="tag {{ e.status }}">{{ e.get_status_display }}</span><br>
-<span class="mut">{{ e.evento.data_hora|date:"D, d/m \à\s H:i" }} · {{ e.membro.banda }}</span></p>
+<span class="mut">{{ e.evento.data_hora|date:"D, d/m \à\s H:i" }} · {{ e.membro.banda }}</span> · <a href="{% url 'troca_pedir' e.pk %}">🔄 Pedir troca</a></p>
 {% empty %}<p class="mut">Nenhuma escala por enquanto.</p>{% endfor %}</div>
 <div class="card"><h2>Próximos eventos</h2>{% for ev in eventos %}
 <p><a href="{% url 'evento' ev.pk %}">{{ ev.titulo }}</a> <span class="mut">· {{ ev.data_hora|date:"d/m H:i" }} · {{ ev.banda }}</span></p>
