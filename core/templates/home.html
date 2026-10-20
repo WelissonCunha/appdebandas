@@ -4,7 +4,7 @@
 {% if pode_criar_banda and not eh_lider %}<div class="card"><h2>Você ainda não tem banda</h2><p><a href="{% url 'banda_nova' %}"><button>+ Criar minha banda</button></a></p></div>{% endif %}
 {% if avisos %}<div class="card"><h2>📢 Avisos</h2>{% for a in avisos %}
 <p>{% if a.fixado %}📌 {% endif %}{{ a.texto }}<br><span class="mut">{{ a.banda }} · {{ a.autor.first_name|default:a.autor.username }} · {{ a.criado|date:"d/m H:i" }}</span></p>{% endfor %}</div>{% endif %}
-<div class="card"><h2>🗓️ Minhas escalas</h2>{% for e in minhas %}
+<div class="card"><h2>🗓️ Minhas escalas <a href="{% url 'minhas_escalas' %}" style="font-size:.85rem">ver todas</a></h2>{% for e in minhas %}
 <p><a href="{% url 'evento' e.evento.pk %}"><b>{{ e.evento.titulo }}</b></a> · {{ e.funcao }}
 <span class="tag {{ e.status }}">{{ e.get_status_display }}</span><br>
 <span class="mut">{{ e.evento.data_hora|date:"D, d/m \à\s H:i" }} · {{ e.membro.banda }}</span> · <a href="{% url 'troca_pedir' e.pk %}">🔄 Pedir troca</a></p>

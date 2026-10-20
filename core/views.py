@@ -2,7 +2,7 @@ from django.contrib import messages
 from .decorators import login_required
 from datetime import timedelta
 from django.db import transaction
-from django.db.models import Max, Q
+from django.db.models import Exists, Max, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -73,6 +73,8 @@ def responder(request, pk):
             esc.obs = request.POST.get("obs", "")[:200]
             esc.save()
             messages.success(request, "Resposta registrada!")
+    if request.POST.get("voltar") == "minhas":
+        return redirect("minhas_escalas")
     return redirect("evento", pk=esc.evento_id)
 
 
@@ -536,3 +538,14 @@ def evento_exportar(request, pk):
     return render(request, "evento_exportar.html", dict(ev=ev, escalas=ev.escalas.select_related("membro__user"),
                                                         setlist=ev.setlist.select_related("musica"),
                                                         gerado=timezone.localtime()))
+
+
+@login_required
+def minhas_escalas(request):
+    agora = timezone.now()
+    qs = (Escala.objects.filter(membro__user=request.user).select_related("evento__banda")
+          .annotate(troca_aberta=Exists(TrocaEscala.objects.filter(escala=OuterRef("pk"), status="aberta"))))
+    proximas = qs.filter(evento__data_hora__gte=agora).order_by("evento__data_hora")
+    passadas = qs.filter(evento__data_hora__lt=agora).order_by("-evento__data_hora")[:20]
+    return render(request, "minhas_escalas.html", dict(
+        proximas=proximas, passadas=passadas, pendentes=proximas.filter(status="pendente").count()))

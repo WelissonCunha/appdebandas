@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block content %}
+<style>.inl{display:inline;margin:0 8px 0 0}.inl button{padding:4px 10px}</style>
+<div class="card"><h2>📅 Minhas escalas</h2>
+<p>{{ proximas|length }} próxima(s){% if pendentes %} · <b>{{ pendentes }} aguardando sua confirmação</b>{% endif %}</p></div>
+<div class="card"><h2>Próximas</h2>
+{% for e in proximas %}<p><a href="{% url 'evento' e.evento.pk %}"><b>{{ e.evento.titulo }}</b></a> · {{ e.funcao }}
+<span class="tag {{ e.status }}">{{ e.get_status_display }}</span><br>
+<span class="mut">{{ e.evento.data_hora|date:"D, d/m \à\s H:i" }} · {{ e.evento.banda }}{% if e.evento.local %} · {{ e.evento.local }}{% endif %}</span><br>
+<form class="inl" method="post" action="{% url 'responder' e.pk %}" style="margin-top:6px">{% csrf_token %}<input type="hidden" name="voltar" value="minhas">
+{% if e.status != 'confirmado' %}<button name="acao" value="confirmado">✅ Confirmar</button>{% endif %}
+{% if e.status != 'recusado' %}<button class="no" name="acao" value="recusado">❌ Não posso</button>{% endif %}</form>
+{% if e.troca_aberta %}<span class="tag">Troca solicitada</span>{% else %}<a href="{% url 'troca_pedir' e.pk %}">🔄 Pedir troca</a>{% endif %}</p>
+{% empty %}<p class="mut">Você não tem escalas futuras.</p>{% endfor %}</div>
+{% if passadas %}<div class="card"><h2>🕘 Anteriores</h2>
+{% for e in passadas %}<p><a href="{% url 'evento' e.evento.pk %}">{{ e.evento.titulo }}</a> · {{ e.funcao }}
+<span class="mut">· {{ e.evento.data_hora|date:"d/m/Y" }} · {{ e.evento.banda }}</span>
+<span class="tag {{ e.status }}">{{ e.get_status_display }}</span></p>{% endfor %}</div>{% endif %}
+{% endblock %}
