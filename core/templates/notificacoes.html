@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% block content %}
+<style>.fm p{margin:0 0 10px}.fm input[type=email]{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}.fm label{display:inline}</style>
+<div class="card fm"><h2>🔔 Notificações</h2>
+<form method="post">{% csrf_token %}{{ form.as_p }}<button>Salvar</button></form></div>
+<div class="card"><h2>📱 Neste aparelho</h2>
+<p class="mut" id="st">Verificando...</p>
+<button id="b-ativar" hidden>🔔 Ativar neste aparelho</button> <button id="b-desativar" class="no" hidden>Desativar</button>
+<form method="post" action="{% url 'push_teste' %}" style="display:inline">{% csrf_token %}<button>Enviar teste</button></form>
+<p class="mut">Aparelhos ativos na sua conta: {{ n_disp }}</p></div>
+<div class="card"><h2>📲 Instalar o app</h2>
+<button id="b-instalar" hidden>Instalar na tela inicial</button>
+<p class="mut">Android/computador: use o botão acima ou o menu do navegador. iPhone: abra no Safari, toque em Compartilhar e em "Adicionar à Tela de Início" (necessário para receber notificações).</p></div>
+<script>
+const CHAVE = "{{ chave }}";
+const st = document.getElementById("st"), ba = document.getElementById("b-ativar"), bd = document.getElementById("b-desativar"), bi = document.getElementById("b-instalar");
+const csrf = () => document.querySelector("[name=csrfmiddlewaretoken]").value;
+const post = (url, corpo) => fetch(url, {method: "POST", headers: {"Content-Type": "application/json", "X-CSRFToken": csrf()}, body: JSON.stringify(corpo)});
+function chaveBin(s) { const r = atob((s + "=".repeat((4 - s.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(r, c => c.charCodeAt(0)); }
+function mostrar(sub) {
+  if (window.Notification && Notification.permission === "denied") { st.textContent = "Notificações bloqueadas. Libere nas configurações do site no navegador."; ba.hidden = bd.hidden = true; return; }
+  st.textContent = sub ? "✅ Ativado neste aparelho." : "Não ativado neste aparelho.";
+  ba.hidden = !!sub; bd.hidden = !sub;
+}
+async function iniciar() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !CHAVE) { st.textContent = "Este aparelho/navegador não suporta notificações (no iPhone, instale o app na tela inicial primeiro). Em celular, o site precisa estar em https."; return; }
+  const reg = await navigator.serviceWorker.ready;
+  mostrar(await reg.pushManager.getSubscription());
+}
+ba.onclick = async () => {
+  if (await Notification.requestPermission() !== "granted") { mostrar(null); return; }
+  const reg = await navigator.serviceWorker.ready;
+  const sub = await reg.pushManager.subscribe({userVisibleOnly: true, applicationServerKey: chaveBin(CHAVE)});
+  const j = sub.toJSON();
+  await post("{% url 'push_inscrever' %}", {endpoint: j.endpoint, keys: j.keys});
+  mostrar(sub);
+};
+bd.onclick = async () => {
+  const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+  if (sub) { await post("{% url 'push_cancelar' %}", {endpoint: sub.endpoint}); await sub.unsubscribe(); }
+  mostrar(null);
+};
+let adiado; window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); adiado = e; bi.hidden = false; });
+bi.onclick = async () => { adiado.prompt(); await adiado.userChoice; bi.hidden = true; };
+iniciar();
+</script>
+{% endblock %}

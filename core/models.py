@@ -108,6 +108,8 @@ class Perfil(models.Model):
     """Dados extras do usuário; trocar_senha força a troca no próximo acesso."""
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="perfil")
     trocar_senha = models.BooleanField(default=False)
+    notif_email = models.BooleanField(default=True)
+    notif_push = models.BooleanField(default=True)
 
     def __str__(self):
         return f"Perfil de {self.user}"
@@ -128,3 +130,12 @@ class TrocaEscala(models.Model):
 
     class Meta:
         ordering = ["-criado"]
+
+
+class PushSub(models.Model):
+    """Aparelho/navegador inscrito para receber notificações push."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="push_subs")
+    endpoint = models.TextField(unique=True)
+    p256dh = models.CharField(max_length=200)
+    auth = models.CharField(max_length=100)
+    criado = models.DateTimeField(auto_now_add=True)

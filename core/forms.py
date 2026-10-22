@@ -69,6 +69,7 @@ class MembroNovoForm(forms.Form):
     username = forms.CharField(max_length=150, label="Login",
                                help_text="Se o login já existir, a pessoa só é adicionada à banda.")
     nome = forms.CharField(max_length=150, required=False, label="Nome")
+    email = forms.EmailField(required=False, label="E-mail", help_text="Usado nas notificações (a pessoa pode alterar depois).")
     senha = forms.CharField(widget=forms.PasswordInput, required=False,
                             help_text="Senha provisória, só para login novo. Peça para a pessoa trocar em 🔑 Senha.")
     papel = forms.ChoiceField(choices=Membro.PAPEIS)
@@ -133,3 +134,9 @@ class TrocaForm(forms.ModelForm):
         f.empty_label = "Qualquer membro da banda"
         f.label = "Quem vai cobrir?"
         f.label_from_instance = lambda m: m.user.get_full_name() or m.user.username
+
+
+class NotifForm(forms.Form):
+    email = forms.EmailField(required=False, label="E-mail")
+    notif_email = forms.BooleanField(required=False, label="Receber avisos por e-mail")
+    notif_push = forms.BooleanField(required=False, label="Receber notificações no celular/computador")

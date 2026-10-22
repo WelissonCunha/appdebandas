@@ -1,5 +1,9 @@
 from django.contrib import messages
 from .decorators import login_required
+import json
+from django.http import JsonResponse
+from django.templatetags.static import static
+from .notificacoes import notificar, vapid_keys
 from datetime import timedelta
 from django.db import transaction
 from django.db.models import Count, Exists, Max, OuterRef, Q
@@ -10,7 +14,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.views import PasswordChangeView
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
-from .forms import TrocaForm, SenhaForm, SenhaResetForm, AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
+from .forms import NotifForm, TrocaForm, SenhaForm, SenhaResetForm, AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
 from .models import *
 
 LIDER = dict(banda__membros__papel="lider")
@@ -131,6 +135,8 @@ def escala_add(request, pk):
         e = form.save(commit=False)
         e.evento = ev
         e.save()
+        notificar([e.membro.user], "Você foi escalado!", f"{e.funcao} em {ev.titulo} — {_fmt(ev.data_hora)}",
+                  f"/evento/{ev.pk}/", exceto=request.user)
     else:
         messages.error(request, "Escolha o membro e informe a função.")
     return redirect("evento", pk=pk)
@@ -243,7 +249,7 @@ def membro_novo(request):
             form.add_error("senha", "Informe uma senha para o novo login.")
         else:
             if not u:
-                u = User.objects.create_user(d["username"], first_name=d["nome"], password=d["senha"])
+                u = User.objects.create_user(d["username"], email=d["email"], first_name=d["nome"], password=d["senha"])
                 Perfil.objects.update_or_create(user=u, defaults={"trocar_senha": True})
             _, criado = Membro.objects.get_or_create(
                 user=u, banda=d["banda"], defaults=dict(papel=d["papel"], instrumentos=d["instrumentos"]))
@@ -345,6 +351,9 @@ def aviso_form(request, pk=None):
         if not aviso:
             novo.autor = request.user
         novo.save()
+        if not aviso:
+            notificar([x.user for x in novo.banda.membros.select_related("user")], f"Novo aviso — {novo.banda.nome}",
+                      novo.texto[:140], "/", exceto=request.user)
         messages.success(request, "Aviso salvo!")
         return redirect("avisos")
     return render(request, "aviso_form.html", dict(form=form, aviso=aviso))
@@ -514,6 +523,13 @@ def troca_aceitar(request, pk):
         esc.save()
         t.status, t.substituto, t.resolvida = "aceita", m, timezone.now()
         t.save()
+    quem = m.user.get_full_name() or m.user.username
+    sol = t.solicitante.user
+    notificar([sol], "Sua troca foi aceita", f"{quem} vai cobrir {esc.funcao} em {ev.titulo}.", f"/evento/{ev.pk}/", exceto=request.user)
+    notificar([x.user for x in ev.banda.membros.filter(papel="lider").select_related("user") if x.user_id != sol.pk],
+              "Troca de escala aceita",
+              f"{quem} assumiu {esc.funcao} de {sol.get_full_name() or sol.username} em {ev.titulo} ({_fmt(ev.data_hora)}).",
+              f"/evento/{ev.pk}/", exceto=request.user)
     messages.success(request, f"Você assumiu {esc.funcao} em {ev.titulo}!")
     return redirect("trocas")
 
@@ -560,3 +576,76 @@ def bandas_lista(request):
               .annotate(n_membros=Count("membros", distinct=True), n_eventos=Count("eventos", distinct=True),
                         n_musicas=Count("musicas", distinct=True)).order_by("nome"))
     return render(request, "bandas.html", dict(bandas=bandas))
+
+
+# ---------- notificações / PWA ----------
+
+def _fmt(dt):
+    return timezone.localtime(dt).strftime("%d/%m às %H:%M")
+
+
+@login_required
+def notificacoes(request):
+    perfil = Perfil.objects.filter(user=request.user).first()
+    inicial = dict(email=request.user.email, notif_email=perfil.notif_email if perfil else True,
+                   notif_push=perfil.notif_push if perfil else True)
+    form = NotifForm(request.POST or None, initial=inicial)
+    if request.method == "POST" and form.is_valid():
+        d = form.cleaned_data
+        request.user.email = d["email"]
+        request.user.save(update_fields=["email"])
+        Perfil.objects.update_or_create(user=request.user, defaults=dict(
+            notif_email=d["notif_email"], notif_push=d["notif_push"]))
+        messages.success(request, "Preferências salvas!")
+        return redirect("notificacoes")
+    try:
+        chave = vapid_keys()[0]
+    except Exception:
+        chave = ""
+    return render(request, "notificacoes.html", dict(form=form, chave=chave, n_disp=request.user.push_subs.count()))
+
+
+@login_required
+@require_POST
+def push_inscrever(request):
+    try:
+        d = json.loads(request.body)
+        PushSub.objects.update_or_create(endpoint=d["endpoint"], defaults=dict(
+            user=request.user, p256dh=d["keys"]["p256dh"], auth=d["keys"]["auth"]))
+    except (ValueError, KeyError, TypeError):
+        return JsonResponse({"ok": False}, status=400)
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
+def push_cancelar(request):
+    try:
+        PushSub.objects.filter(endpoint=json.loads(request.body).get("endpoint"), user=request.user).delete()
+    except (ValueError, AttributeError):
+        return JsonResponse({"ok": False}, status=400)
+    return JsonResponse({"ok": True})
+
+
+@login_required
+@require_POST
+def push_teste(request):
+    notificar([request.user], "Notificação de teste", "Se você recebeu isso, está funcionando! 🎸", "/notificacoes/")
+    messages.success(request, "Teste enviado. Pode levar alguns segundos (sem e-mail configurado, ele aparece no terminal).")
+    return redirect("notificacoes")
+
+
+def manifest(request):
+    icones = [dict(src=static("core/icons/icon-192.png"), sizes="192x192", type="image/png", purpose="any"),
+              dict(src=static("core/icons/icon-512.png"), sizes="512x512", type="image/png", purpose="any"),
+              dict(src=static("core/icons/icon-maskable-512.png"), sizes="512x512", type="image/png", purpose="maskable")]
+    return JsonResponse(dict(name="Bandas", short_name="Bandas", description="Escalas, repertório e avisos da banda",
+                             start_url="/", scope="/", display="standalone", lang="pt-BR",
+                             theme_color="#5b4bdb", background_color="#f6f6f9", icons=icones),
+                        content_type="application/manifest+json")
+
+
+def service_worker(request):
+    resp = render(request, "sw.js", content_type="application/javascript")
+    resp["Cache-Control"] = "no-cache"
+    return resp
