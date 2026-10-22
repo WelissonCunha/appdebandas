@@ -3,8 +3,9 @@ from .decorators import login_required
 import json
 from django.http import JsonResponse
 from django.templatetags.static import static
+from .importacao import parse_texto
 from .notificacoes import notificar, vapid_keys
-from datetime import timedelta
+from datetime import datetime, timedelta
 from django.db import transaction
 from django.db.models import Count, Exists, Max, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -14,7 +15,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.views import PasswordChangeView
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
-from .forms import NotifForm, TrocaForm, SenhaForm, SenhaResetForm, AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
+from .forms import bandas_do_lider, NotifForm, TrocaForm, SenhaForm, SenhaResetForm, AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
 from .models import *
 
 LIDER = dict(banda__membros__papel="lider")
@@ -649,3 +650,86 @@ def service_worker(request):
     resp = render(request, "sw.js", content_type="application/javascript")
     resp["Cache-Control"] = "no-cache"
     return resp
+
+
+# ---------- importar calendário (texto colado) ----------
+
+def _aware(s):
+    try:
+        return timezone.make_aware(datetime.strptime(s, "%Y-%m-%dT%H:%M"))
+    except (ValueError, TypeError):
+        return None
+
+
+@login_required
+def importar_eventos(request):
+    if not _eh_lider(request.user):
+        return redirect("home")
+    bandas = bandas_do_lider(request.user)
+    ano_atual = timezone.localdate().year
+    ctx = dict(bandas=bandas, tipos=Evento.TIPOS, ano=ano_atual, hora="19:00", tipo="culto", texto="",
+               importacoes=(ImportacaoEventos.objects.filter(banda__in=bandas).select_related("banda")
+                            .annotate(n=Count("eventos")).order_by("-criado")[:10]))
+    if request.method != "POST":
+        return render(request, "importar.html", ctx)
+    banda = bandas.filter(pk=request.POST.get("banda") or 0).first()
+    if not banda:
+        messages.error(request, "Escolha uma banda.")
+        return render(request, "importar.html", ctx)
+    tipos_validos = {t for t, _ in Evento.TIPOS}
+
+    if request.POST.get("acao") == "confirmar":
+        criados = ignorados = 0
+        imp = None
+        for i in range(int(request.POST.get("total", 0) or 0)):
+            if not request.POST.get(f"ok_{i}"):
+                continue
+            titulo = request.POST.get(f"titulo_{i}", "").strip()[:150]
+            quando = _aware(request.POST.get(f"quando_{i}"))
+            tipo = request.POST.get(f"tipo_{i}")
+            if not titulo or not quando or tipo not in tipos_validos or Evento.objects.filter(
+                    banda=banda, titulo__iexact=titulo, data_hora__date=timezone.localtime(quando).date()).exists():
+                ignorados += 1
+                continue
+            imp = imp or ImportacaoEventos.objects.create(banda=banda, autor=request.user)
+            Evento.objects.create(banda=banda, titulo=titulo, tipo=tipo, data_hora=quando, importacao=imp,
+                                  local=request.POST.get(f"local_{i}", "").strip()[:150])
+            criados += 1
+        if criados:
+            messages.success(request, f"{criados} evento(s) importado(s)!" + (f" {ignorados} ignorado(s)." if ignorados else ""))
+            return redirect("eventos")
+        messages.error(request, "Nenhum evento foi importado. Confira os itens marcados (título e data).")
+        return redirect("importar_eventos")
+
+    # pré-visualização
+    try:
+        ano = int(request.POST.get("ano") or ano_atual)
+    except ValueError:
+        ano = ano_atual
+    hora = request.POST.get("hora") or "19:00"
+    tipo_padrao = request.POST.get("tipo") if request.POST.get("tipo") in tipos_validos else "culto"
+    linhas = []
+    for i, it in enumerate(parse_texto(request.POST.get("texto", ""), ano)):
+        quando, dup = "", False
+        if it["data"]:
+            h, mi = it["hora"] or tuple(int(x) for x in hora.split(":")[:2])
+            y, mo, d = it["data"]
+            quando = f"{y:04d}-{mo:02d}-{d:02d}T{h:02d}:{mi:02d}"
+            dup = Evento.objects.filter(banda=banda, titulo__iexact=it["titulo"], data_hora__date=datetime(y, mo, d).date()).exists()
+        linhas.append(dict(i=i, quando=quando, dup=dup, tipo=it["tipo"] or tipo_padrao,
+                           marcado=not it["erro"] and not dup, **{k: it[k] for k in ("linha", "titulo", "local", "erro")}))
+    if not linhas:
+        messages.error(request, "Cole o texto do calendário na caixa.")
+        return render(request, "importar.html", ctx)
+    return render(request, "importar.html", dict(ctx, banda=banda, linhas=linhas, total=len(linhas)))
+
+
+@login_required
+@require_POST
+def importacao_desfazer(request, pk):
+    imp = get_object_or_404(ImportacaoEventos, pk=pk, banda__membros__user=request.user, banda__membros__papel="lider")
+    n = imp.eventos.count()
+    imp.eventos.all().delete()
+    imp.delete()
+    messages.success(request, f"Importação desfeita: {n} evento(s) removido(s).")
+    return redirect("importar_eventos")

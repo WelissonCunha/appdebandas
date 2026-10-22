@@ -50,6 +50,8 @@ class Evento(models.Model):
     data_hora = models.DateTimeField()
     local = models.CharField(max_length=150, blank=True)
     descricao = models.TextField(blank=True)
+    importacao = models.ForeignKey("ImportacaoEventos", null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name="eventos")
 
     class Meta:
         ordering = ["data_hora"]
@@ -138,4 +140,11 @@ class PushSub(models.Model):
     endpoint = models.TextField(unique=True)
     p256dh = models.CharField(max_length=200)
     auth = models.CharField(max_length=100)
+    criado = models.DateTimeField(auto_now_add=True)
+
+
+class ImportacaoEventos(models.Model):
+    """Lote de eventos importados, para poder desfazer de uma vez."""
+    banda = models.ForeignKey(Banda, on_delete=models.CASCADE, related_name="importacoes")
+    autor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
     criado = models.DateTimeField(auto_now_add=True)
