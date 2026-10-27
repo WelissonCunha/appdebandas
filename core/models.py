@@ -112,6 +112,8 @@ class Perfil(models.Model):
     trocar_senha = models.BooleanField(default=False)
     notif_email = models.BooleanField(default=True)
     notif_push = models.BooleanField(default=True)
+    nascimento = models.DateField(null=True, blank=True)
+    foto_em = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Perfil de {self.user}"
@@ -148,3 +150,19 @@ class ImportacaoEventos(models.Model):
     banda = models.ForeignKey(Banda, on_delete=models.CASCADE, related_name="importacoes")
     autor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
     criado = models.DateTimeField(auto_now_add=True)
+
+
+class FotoPerfil(models.Model):
+    """Foto (JPEG já reduzido pelo navegador) guardada no banco, sem depender de disco."""
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="foto")
+    dados = models.BinaryField()
+
+
+class Mensagem(models.Model):
+    banda = models.ForeignKey(Banda, on_delete=models.CASCADE, related_name="mensagens")
+    autor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    texto = models.TextField(max_length=1000)
+    criado = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["criado"]

@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% load menu %}{% block content %}
+<style>.ph{text-align:center}.ph label{position:relative;display:inline-block;cursor:pointer}
+.cam{position:absolute;right:-4px;bottom:-4px;background:var(--pri);color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:15px;border:3px solid var(--card)}
+.ph h1{margin:.5em 0 .1em}.fm p{margin:0 0 10px}.fm input{width:100%}.lk{width:100%;text-align:left;background:none;color:var(--tx);border:0;border-top:1px solid var(--bd);border-radius:0;padding:14px 0;font-weight:500;min-height:0;display:flex;justify-content:space-between}</style>
+<div class="card ph"><label for="foto-input">{% avatar user.pk nome foto_em 96 %}<span class="cam">📷</span></label>
+<input type="file" id="foto-input" accept="image/*" hidden>
+<h1>{{ nome }}</h1>
+<div class="mut">{% for m in meus_membros %}{{ m.banda.nome }} · {{ m.get_papel_display }}{% if not forloop.last %}<br>{% endif %}{% empty %}Sem ministério{% endfor %}</div>
+<p class="mut" id="foto-st">Toque na foto para trocá-la.</p>
+{% if foto_em %}<form method="post" action="{% url 'perfil_foto' %}" class="inl">{% csrf_token %}<input type="hidden" name="remover" value="1"><button class="sec">Remover foto</button></form>{% endif %}</div>
+<div class="card" style="padding-top:6px;padding-bottom:6px">
+<a class="linha" href="{% url 'equipe' %}"><span>👥 Membros</span><span class="mut">›</span></a>
+<a class="linha" href="{% url 'notificacoes' %}"><span>🔔 Notificações</span><span class="mut">›</span></a>
+<a class="linha" href="{% url 'alterar_senha' %}"><span>🔑 Alterar senha</span><span class="mut">›</span></a>
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="lk" style="color:var(--no)"><span>↩️ Sair</span></button></form></div>
+<div class="card fm"><h2>Meus dados</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button>Salvar</button></form></div>
+<script>
+const inp = document.getElementById("foto-input"), st = document.getElementById("foto-st");
+inp.addEventListener("change", () => {
+  const f = inp.files[0]; if (!f) return;
+  const img = new Image(), url = URL.createObjectURL(f);
+  st.textContent = "Enviando...";
+  img.onload = () => {
+    const s = Math.min(img.width, img.height), c = document.createElement("canvas");
+    c.width = c.height = 256;
+    c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 256, 256);
+    URL.revokeObjectURL(url);
+    c.toBlob(async b => {
+      const fd = new FormData(); fd.append("foto", b, "foto.jpg");
+      const r = await fetch("{% url 'perfil_foto' %}", {method: "POST", headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value}, body: fd});
+      if (r.ok) location.reload(); else st.textContent = "Não foi possível enviar a foto.";
+    }, "image/jpeg", 0.85);
+  };
+  img.onerror = () => { st.textContent = "Arquivo de imagem inválido."; };
+  img.src = url;
+});
+</script>
+{% endblock %}

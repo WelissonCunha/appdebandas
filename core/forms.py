@@ -140,3 +140,9 @@ class NotifForm(forms.Form):
     email = forms.EmailField(required=False, label="E-mail")
     notif_email = forms.BooleanField(required=False, label="Receber avisos por e-mail")
     notif_push = forms.BooleanField(required=False, label="Receber notificações no celular/computador")
+
+
+class PerfilForm(forms.Form):
+    nome = forms.CharField(max_length=150, label="Nome")
+    nascimento = forms.DateField(required=False, label="Aniversário",
+                                 widget=forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"))

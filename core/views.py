@@ -1,7 +1,7 @@
 from django.contrib import messages
 from .decorators import login_required
 import json
-from django.http import JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.templatetags.static import static
 from .importacao import parse_texto
 from .notificacoes import notificar, vapid_keys
@@ -14,11 +14,15 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model
 from django.contrib.auth.views import PasswordChangeView
 from django.contrib.messages.views import SuccessMessageMixin
-from django.urls import reverse_lazy
-from .forms import bandas_do_lider, NotifForm, TrocaForm, SenhaForm, SenhaResetForm, AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
+from django.urls import reverse, reverse_lazy
+from .forms import PerfilForm, bandas_do_lider, NotifForm, TrocaForm, SenhaForm, SenhaResetForm, AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
 from .models import *
 
 LIDER = dict(banda__membros__papel="lider")
+
+
+MESES_PT = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro",
+            "Outubro", "Novembro", "Dezembro"]
 
 
 def _bandas(user):
@@ -45,15 +49,20 @@ def _evento_lider(request, pk):
 def home(request):
     bandas = _bandas(request.user)
     agora = timezone.now()
+    hoje = timezone.localdate()
     minhas = (Escala.objects.filter(membro__user=request.user, evento__data_hora__gte=agora)
-              .select_related("evento", "membro__banda").order_by("evento__data_hora"))
-    eventos = Evento.objects.filter(banda__in=bandas, data_hora__gte=agora).select_related("banda")[:10]
-    avisos = Aviso.objects.filter(banda__in=bandas).select_related("banda", "autor")[:8]
-    indisp = Indisponibilidade.objects.filter(membro__user=request.user, data__gte=agora.date())
-    return render(request, "home.html", dict(minhas=minhas, eventos=eventos, avisos=avisos, indisp=indisp,
-                                             eh_lider=_eh_lider(request.user),
-                                             pode_criar_banda=_pode_criar_banda(request.user),
-                                             trocas_info=_trocas_info(request.user)))
+              .select_related("evento", "membro__banda").order_by("evento__data_hora"))[:5]
+    eventos = Evento.objects.filter(banda__in=bandas, data_hora__gte=agora).select_related("banda")[:6]
+    avisos = Aviso.objects.filter(banda__in=bandas).select_related("banda", "autor")[:6]
+    indisp = Indisponibilidade.objects.filter(membro__user=request.user, data__gte=hoje)
+    meus_membros = (Membro.objects.filter(user=request.user).select_related("banda")
+                    .annotate(n=Count("banda__membros")))
+    anivers = sorted(Perfil.objects.filter(user__membros__banda__in=bandas, nascimento__month=hoje.month)
+                     .select_related("user").distinct(), key=lambda p: p.nascimento.day)
+    return render(request, "home.html", dict(
+        minhas=minhas, eventos=eventos, avisos=avisos, indisp=indisp, meus_membros=meus_membros,
+        anivers=anivers, hoje=hoje, mes_nome=MESES_PT[hoje.month - 1], eh_lider=_eh_lider(request.user),
+        pode_criar_banda=_pode_criar_banda(request.user), trocas_info=_trocas_info(request.user)))
 
 
 @login_required
@@ -787,3 +796,99 @@ def membro_excluir_lote(request):
     if not removidos and not bloqueados:
         messages.error(request, "Nenhum membro selecionado.")
     return redirect("membros")
+
+
+# ---------- perfil, foto e membros ----------
+
+@login_required
+def perfil(request):
+    p = Perfil.objects.filter(user=request.user).first()
+    form = PerfilForm(request.POST or None, initial=dict(nome=request.user.get_full_name(),
+                                                         nascimento=p.nascimento if p else None))
+    if request.method == "POST" and form.is_valid():
+        request.user.first_name, request.user.last_name = form.cleaned_data["nome"].strip(), ""
+        request.user.save(update_fields=["first_name", "last_name"])
+        Perfil.objects.update_or_create(user=request.user, defaults=dict(nascimento=form.cleaned_data["nascimento"]))
+        messages.success(request, "Dados salvos!")
+        return redirect("perfil")
+    return render(request, "perfil.html", dict(
+        form=form, foto_em=p.foto_em if p else None, nome=request.user.get_full_name() or request.user.username,
+        meus_membros=Membro.objects.filter(user=request.user).select_related("banda")))
+
+
+@login_required
+@require_POST
+def perfil_foto(request):
+    if request.POST.get("remover"):
+        FotoPerfil.objects.filter(user=request.user).delete()
+        Perfil.objects.update_or_create(user=request.user, defaults=dict(foto_em=None))
+        messages.success(request, "Foto removida.")
+        return redirect("perfil")
+    arq = request.FILES.get("foto")
+    dados = arq.read() if arq else b""
+    if not dados or len(dados) > 300_000 or dados[:3] != b"\xff\xd8\xff":
+        return JsonResponse({"ok": False}, status=400)
+    FotoPerfil.objects.update_or_create(user=request.user, defaults=dict(dados=dados))
+    Perfil.objects.update_or_create(user=request.user, defaults=dict(foto_em=timezone.now()))
+    return JsonResponse({"ok": True})
+
+
+@login_required
+def foto(request, pk):
+    if pk != request.user.pk and not Membro.objects.filter(user_id=pk, banda__membros__user=request.user).exists():
+        raise Http404
+    f = get_object_or_404(FotoPerfil, user_id=pk)
+    resp = HttpResponse(bytes(f.dados), content_type="image/jpeg")
+    resp["Cache-Control"] = "private, max-age=86400"
+    return resp
+
+
+def _banda_escolhida(request):
+    bandas = list(Banda.objects.filter(membros__user=request.user).order_by("nome"))
+    alvo = next((b for b in bandas if str(b.pk) == request.GET.get("banda")), bandas[0] if bandas else None)
+    return bandas, alvo
+
+
+@login_required
+def equipe(request):
+    bandas, banda = _banda_escolhida(request)
+    membros = (Membro.objects.filter(banda=banda).select_related("user__perfil")
+               .order_by("papel", "user__first_name", "user__username")) if banda else []
+    pode = bool(banda) and banda.membros.filter(user=request.user, papel="lider").exists()
+    return render(request, "equipe.html", dict(bandas=bandas, banda=banda, membros=membros, pode_gerenciar=pode))
+
+
+# ---------- mensagens ----------
+
+@login_required
+def mensagens(request):
+    bandas, banda = _banda_escolhida(request)
+    msgs, lider_banda = [], False
+    if banda:
+        msgs = list(banda.mensagens.select_related("autor").order_by("-criado")[:80])[::-1]
+        fotos = dict(Perfil.objects.filter(user_id__in={x.autor_id for x in msgs if x.autor_id})
+                     .values_list("user_id", "foto_em"))
+        for x in msgs:
+            x.foto_em = fotos.get(x.autor_id)
+        lider_banda = banda.membros.filter(user=request.user, papel="lider").exists()
+    return render(request, "mensagens.html", dict(bandas=bandas, banda=banda, msgs=msgs, lider_banda=lider_banda))
+
+
+@login_required
+@require_POST
+def mensagem_enviar(request):
+    bid = request.POST.get("banda", "")
+    banda = get_object_or_404(Banda, pk=int(bid) if bid.isdigit() else 0, membros__user=request.user)
+    texto = request.POST.get("texto", "").strip()[:1000]
+    if texto:
+        Mensagem.objects.create(banda=banda, autor=request.user, texto=texto)
+    return redirect(reverse("mensagens") + f"?banda={banda.pk}")
+
+
+@login_required
+@require_POST
+def mensagem_excluir(request, pk):
+    msg = get_object_or_404(Mensagem, pk=pk, banda__membros__user=request.user)
+    if msg.autor_id == request.user.id or msg.banda.membros.filter(user=request.user, papel="lider").exists():
+        msg.delete()
+    return redirect(reverse("mensagens") + f"?banda={msg.banda_id}")

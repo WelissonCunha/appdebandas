@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% load menu %}{% block content %}
+<style>.lm{display:flex;gap:10px;margin:0 0 12px;align-items:flex-end}.lm.minha{flex-direction:row-reverse}
+.bolha{background:var(--card);border:1px solid var(--bd);border-radius:16px 16px 16px 4px;padding:9px 13px;max-width:78%;box-shadow:var(--sh)}
+.minha .bolha{background:var(--pri);color:#fff;border-color:var(--pri);border-radius:16px 16px 4px 16px}
+.bolha .n{font-size:.76rem;font-weight:700;color:var(--pri);margin-bottom:2px}.minha .bolha .n{display:none}
+.bolha .h{font-size:.7rem;opacity:.7;margin-top:3px}.bolha .tx{white-space:pre-wrap;word-break:break-word}
+.bolha form{display:inline}.bolha .x{background:none;color:inherit;min-height:0;padding:0 4px;font-size:.7rem;opacity:.7;font-weight:500}
+.comp{position:sticky;bottom:calc(66px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;background:var(--bg);padding:8px 0}
+.comp textarea{flex:1;resize:none;max-height:120px}</style>
+{% if bandas|length > 1 %}<div class="seg">{% for b in bandas %}<a class="{% if b.pk == banda.pk %}on{% endif %}" href="?banda={{ b.pk }}">{{ b.nome }}</a>{% endfor %}</div>{% endif %}
+{% if banda %}<h2>💬 Mensagens · {{ banda.nome }}</h2>
+<div id="chat">{% for m in msgs %}<div class="lm {% if m.autor_id == user.id %}minha{% endif %}">
+{% if m.autor_id != user.id %}{% avatar m.autor_id m.autor.get_full_name|default:m.autor.username m.foto_em 34 %}{% endif %}
+<div class="bolha"><div class="n">{{ m.autor.get_full_name|default:m.autor.username|default:"Ex-membro" }}</div><div class="tx">{{ m.texto }}</div>
+<div class="h">{{ m.criado|date:"d/m H:i" }}{% if m.autor_id == user.id or lider_banda %} · <form method="post" action="{% url 'mensagem_excluir' m.pk %}" onsubmit="return confirm('Apagar esta mensagem?')">{% csrf_token %}<button class="x">apagar</button></form>{% endif %}</div></div></div>
+{% empty %}<p class="mut">Nenhuma mensagem ainda. Comece a conversa!</p>{% endfor %}</div>
+<form class="comp" method="post" action="{% url 'mensagem_enviar' %}">{% csrf_token %}<input type="hidden" name="banda" value="{{ banda.pk }}">
+<textarea name="texto" rows="1" maxlength="1000" placeholder="Escreva uma mensagem..." required></textarea><button>Enviar</button></form>
+<script>
+const chat = document.getElementById("chat"), fim = () => window.scrollTo(0, document.body.scrollHeight);
+fim();
+setInterval(async () => {
+  if (document.hidden) return;
+  try {
+    const r = await fetch(location.href, {credentials: "same-origin"});
+    const novo = new DOMParser().parseFromString(await r.text(), "text/html").getElementById("chat");
+    if (novo && novo.innerHTML !== chat.innerHTML) {
+      const perto = window.innerHeight + window.scrollY >= document.body.scrollHeight - 140;
+      chat.innerHTML = novo.innerHTML; if (perto) fim();
+    }
+  } catch (e) {}
+}, 12000);
+</script>
+{% else %}<div class="card"><p class="mut">Você ainda não participa de nenhum ministério.</p></div>{% endif %}
+{% endblock %}

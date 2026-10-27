@@ -1,27 +1,117 @@
 {% load menu static %}<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>{% block title %}Bandas{% endblock %}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>{% block title %}Bandas{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="{% url 'manifest' %}"><meta name="theme-color" content="#5b4bdb">
 <link rel="apple-touch-icon" href="{% static 'core/icons/icon-192.png' %}"><meta name="apple-mobile-web-app-capable" content="yes">
 <style>
-:root{--bg:#f6f6f9;--card:#fff;--tx:#1d1d28;--mut:#6b6b7b;--pri:#5b4bdb;--ok:#1a9d5a;--no:#d23b3b}
-@media(prefers-color-scheme:dark){:root{--bg:#14141b;--card:#1f1f2a;--tx:#ececf3;--mut:#9a9aae}}
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--tx)}
-nav{background:var(--pri);color:#fff;padding:12px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-nav a{color:#fff;text-decoration:none}nav .sp{flex:1}
-main{max-width:760px;margin:auto;padding:16px}
-.card{background:var(--card);border-radius:12px;padding:14px 16px;margin:0 0 14px;box-shadow:0 1px 3px #0002}
-h2{margin:.2em 0 .6em;font-size:1.1rem}a{color:var(--pri)}.mut{color:var(--mut);font-size:.9rem}
-.tag{padding:2px 8px;border-radius:99px;font-size:.78rem;color:#fff;background:var(--mut)}
+:root{--bg:#f6f6f9;--card:#fff;--tx:#1d1d28;--mut:#6b6b7b;--pri:#5b4bdb;--pri-soft:#ecebfb;--ok:#1a9d5a;--no:#d23b3b;--bd:#e4e4ec;--sh:0 1px 2px #1d1d2812,0 6px 18px #1d1d280d}
+@media(prefers-color-scheme:dark){:root{--bg:#14141b;--card:#1f1f2a;--tx:#ececf3;--mut:#9a9aae;--bd:#2d2d3b;--pri-soft:#2b2858;--sh:0 1px 2px #0006}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:70px}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.45;font-size:15px;
+padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+a{color:var(--pri);text-decoration:none}a:hover{text-decoration:underline}
+svg.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* topo */
+.top{position:sticky;top:0;z-index:30;background:var(--pri);color:#fff;display:flex;align-items:center;gap:6px;
+padding:calc(8px + env(safe-area-inset-top,0px)) 10px 8px;min-height:56px}
+.top .brand{font-weight:700;font-size:1.1rem;letter-spacing:-.01em;color:#fff;display:flex;align-items:center;gap:8px;flex:1}
+.top button.ico,.top a.ico{background:transparent;color:#fff;border:0;width:42px;height:42px;min-height:0;padding:0;border-radius:12px;display:grid;place-items:center}
+.top button.ico:hover,.top a.ico:hover{background:#ffffff26;text-decoration:none}
+/* gaveta (menu hambúrguer) */
+.fundo{position:fixed;inset:0;background:#0007;opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
+.gaveta{position:fixed;top:0;bottom:0;left:0;width:min(300px,84vw);background:var(--card);z-index:50;transform:translateX(-102%);transition:transform .22s;
+padding:calc(14px + env(safe-area-inset-top,0px)) 12px 20px;overflow:auto;box-shadow:var(--sh)}
+body.menu-aberto .gaveta{transform:none}body.menu-aberto .fundo{opacity:1;pointer-events:auto}
+.gaveta .cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.gaveta .cab b{font-size:1.1rem}
+.gaveta h3{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:16px 8px 6px}
+.gaveta a.it{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;color:var(--tx);font-weight:500}
+.gaveta a.it:hover{background:var(--pri-soft);text-decoration:none}
+.gaveta button.ico{background:transparent;color:var(--tx);border:0;width:38px;height:38px;min-height:0;padding:0}
+/* conteúdo */
+main{max-width:720px;margin:0 auto;padding:16px 14px}
+h1{font-size:1.35rem;margin:.1em 0 .5em;letter-spacing:-.02em}h2{margin:.1em 0 .7em;font-size:1.02rem;font-weight:700;letter-spacing:-.01em}
+.card{background:var(--card);border-radius:16px;padding:16px;margin:0 0 14px;box-shadow:var(--sh);border:1px solid var(--bd)}
+.mut{color:var(--mut);font-size:.88rem}p{margin:.4em 0}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.74rem;font-weight:600;color:#fff;background:var(--mut);vertical-align:middle}
 .confirmado{background:var(--ok)}.recusado{background:var(--no)}
-button,input{font:inherit;padding:8px 12px;border-radius:8px;border:1px solid #8884}
-button{background:var(--pri);color:#fff;border:0;cursor:pointer}button.no{background:var(--no)}
-.msg{background:var(--ok);color:#fff;padding:10px;border-radius:8px;margin-bottom:12px}
-details.dd{position:relative}details.dd summary{cursor:pointer;list-style:none;user-select:none}details.dd summary::-webkit-details-marker{display:none}.dd-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:180px;background:var(--card);color:var(--tx);border-radius:10px;box-shadow:0 4px 16px #0004;padding:6px;z-index:20;display:flex;flex-direction:column}.dd-menu a{color:var(--tx);padding:9px 12px;border-radius:6px;white-space:nowrap}.dd-menu a:hover{background:var(--bg)}
+.msg{background:var(--ok);color:#fff;padding:12px 14px;border-radius:12px;margin-bottom:12px;font-weight:500}
+/* controles */
+button,.btn{font:inherit;font-weight:600;min-height:40px;padding:9px 16px;border-radius:12px;border:0;background:var(--pri);color:#fff;cursor:pointer;transition:filter .15s,transform .05s}
+button:hover{filter:brightness(1.08)}button:active{transform:scale(.98)}button:disabled{opacity:.45;cursor:not-allowed}
+button.no{background:var(--no)}button.sec{background:transparent;color:var(--pri);border:1.5px solid var(--pri)}
+.inl button{min-height:0;padding:4px 10px;font-size:.85rem;border-radius:9px}
+input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{font:inherit;padding:10px 12px;border-radius:12px;border:1.5px solid var(--bd);background:var(--card);color:var(--tx);max-width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-soft)}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--pri);vertical-align:middle}
+/* listas, avatar, abas */
+.linha{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--bd);color:inherit}
+a.linha:hover{text-decoration:none}.quem{display:flex;align-items:center;gap:12px;min-width:0}
+.av{border-radius:50%;object-fit:cover;flex:none;display:inline-flex;align-items:center;justify-content:center}
+.av.ini{background:var(--pri-soft);color:var(--pri);font-weight:700}
+.seg{display:flex;gap:6px;overflow:auto;margin:0 0 12px;padding-bottom:2px}
+.seg a{padding:8px 14px;border-radius:99px;background:var(--card);border:1px solid var(--bd);color:var(--tx);white-space:nowrap;font-weight:500}
+.seg a.on{background:var(--pri);border-color:var(--pri);color:#fff}
+/* barra inferior */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--card);border-top:1px solid var(--bd);
+padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px #1d1d280d}
+.tabbar a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 8px;color:var(--mut);font-size:10px;font-weight:500;text-decoration:none}
+.tabbar a span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabbar a.on{color:var(--pri);font-weight:700}.tabbar a.on svg{stroke-width:2.4}
+@media(min-width:760px){.tabbar{max-width:720px;left:50%;transform:translateX(-50%);border-radius:18px 18px 0 0;border:1px solid var(--bd);border-bottom:0}}
 </style></head><body>
-<nav><b>🎸 Bandas</b><a href="/">Início</a><a href="{% url 'minhas_escalas' %}">📅 Minhas escalas</a><a href="{% url 'trocas' %}">🔄 Trocas</a>
-<a href="{% url 'repertorio' %}">Repertório</a>
-{% usuario_eh_lider as lider_menu %}{% if lider_menu %}<details class="dd"><summary>⚙️ Gerenciar ▾</summary><div class="dd-menu"><a href="{% url 'gerenciar' %}">📊 Painel</a><a href="{% url 'eventos' %}">📅 Eventos</a><a href="{% url 'repertorio' %}">🎵 Músicas</a><a href="{% url 'bandas' %}">🎸 Bandas</a><a href="{% url 'membros' %}">👥 Membros</a><a href="{% url 'avisos' %}">📢 Avisos</a></div></details>{% endif %}
-<span class="sp"></span>
-{% if user.is_staff %}<a href="/admin/">Admin (dev)</a>{% endif %}
-{% if user.is_authenticated %}<a href="{% url 'notificacoes' %}">🔔</a><a href="{% url 'alterar_senha' %}">🔑 Senha</a><form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button style="background:#0003">Sair</button></form>{% endif %}</nav>
-<main>{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}{% block content %}{% endblock %}</main><script>document.addEventListener("click",function(e){document.querySelectorAll("details.dd[open]").forEach(function(d){if(!d.contains(e.target))d.removeAttribute("open")})});</script><script>if("serviceWorker" in navigator){navigator.serviceWorker.register("{% url 'sw' %}")}</script></body></html>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+<symbol id="i-swap" viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 013-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 01-3 3H3"/></symbol>
+<symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+</defs></svg>
+{% usuario_eh_lider as lider_menu %}
+{% if user.is_authenticated %}
+<header class="top">
+{% if lider_menu or user.is_staff %}<button class="ico" id="b-menu" aria-label="Abrir menu"><svg class="ic"><use href="#i-menu"/></svg></button>{% endif %}
+<a class="brand" href="{% url 'home' %}">🎸 Bandas</a>
+<a class="ico" href="{% url 'notificacoes' %}" aria-label="Notificações"><svg class="ic"><use href="#i-bell"/></svg></a>
+</header>
+{% if lider_menu or user.is_staff %}
+<div class="fundo" id="fundo"></div>
+<aside class="gaveta" id="gaveta" aria-label="Menu de gerenciamento">
+<div class="cab"><b>🎸 Bandas</b><button class="ico" id="b-fechar" aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+{% if lider_menu %}<h3>Gerenciar</h3>
+<a class="it" href="{% url 'gerenciar' %}">📊 Painel</a>
+<a class="it" href="{% url 'eventos' %}">📅 Eventos</a>
+<a class="it" href="{% url 'repertorio' %}">🎵 Músicas</a>
+<a class="it" href="{% url 'bandas' %}">🎸 Bandas</a>
+<a class="it" href="{% url 'membros' %}">👥 Gerenciar membros</a>
+<a class="it" href="{% url 'avisos' %}">📢 Avisos</a>
+<a class="it" href="{% url 'importar_eventos' %}">📥 Importar calendário</a>{% endif %}
+{% if user.is_staff %}<h3>Desenvolvedor</h3><a class="it" href="/admin/">🛠️ Admin (dev)</a>{% endif %}
+</aside>{% endif %}
+{% else %}
+<header class="top"><span class="brand">🎸 Bandas</span></header>
+{% endif %}
+<main>{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}{% block content %}{% endblock %}</main>
+{% if user.is_authenticated %}
+<nav class="tabbar" aria-label="Principal">{% with n=request.resolver_match.url_name %}
+<a href="{% url 'home' %}" class="{% if n == 'home' %}on{% endif %}"><svg class="ic"><use href="#i-home"/></svg><span>Início</span></a>
+<a href="{% url 'minhas_escalas' %}" class="{% if n == 'minhas_escalas' %}on{% endif %}"><svg class="ic"><use href="#i-cal"/></svg><span>Escalas</span></a>
+<a href="{% url 'trocas' %}" class="{% if n == 'trocas' or n == 'troca_pedir' %}on{% endif %}"><svg class="ic"><use href="#i-swap"/></svg><span>Trocas</span></a>
+<a href="{% url 'repertorio' %}" class="{% if n == 'repertorio' %}on{% endif %}"><svg class="ic"><use href="#i-music"/></svg><span>Repertório</span></a>
+<a href="{% url 'mensagens' %}" class="{% if n == 'mensagens' %}on{% endif %}"><svg class="ic"><use href="#i-chat"/></svg><span>Mensagens</span></a>
+<a href="{% url 'perfil' %}" class="{% if n == 'perfil' or n == 'equipe' or n == 'notificacoes' or n == 'alterar_senha' %}on{% endif %}"><svg class="ic"><use href="#i-user"/></svg><span>Perfil</span></a>
+{% endwith %}</nav>
+{% endif %}
+<script>
+(function(){var b=document.body,m=document.getElementById("b-menu");if(!m)return;
+function t(v){b.classList.toggle("menu-aberto",v)}
+m.onclick=function(){t(true)};document.getElementById("b-fechar").onclick=function(){t(false)};
+document.getElementById("fundo").onclick=function(){t(false)};
+document.addEventListener("keydown",function(e){if(e.key==="Escape")t(false)});})();
+if("serviceWorker" in navigator){navigator.serviceWorker.register("{% url 'sw' %}")}
+</script></body></html>
