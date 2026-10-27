@@ -1,5 +1,6 @@
 """Lê texto colado de um calendário e devolve uma lista de eventos candidatos."""
 import re
+from collections import deque
 from datetime import datetime
 
 MESES = {"janeiro": 1, "fevereiro": 2, "março": 3, "marco": 3, "abril": 4, "maio": 5, "junho": 6, "julho": 7,
@@ -11,6 +12,7 @@ _TXT = re.compile(rf"(?<!\d)(\d{{1,2}})\s*(?:de\s+)?({_MES})\b(?:\s*(?:de\s*)?(\
 _NUM = re.compile(r"(?<!\d)(\d{1,2})[/.\-](\d{1,2})(?:[/.\-](\d{2,4}))?(?!\d)")
 _HORA = re.compile(r"(?<!\d)(\d{1,2})\s*(?:h(?![^\W\d_])|:)\s*(\d{2})?(?!\d)|(?<!\d)(\d{1,2})\s*horas?\b", re.I)
 _CAB = re.compile(rf"^\W*({_MES})(?:\s*(?:de|/|-)?\s*(\d{{4}}))?\W*$", re.I)
+_MULTI = re.compile(rf"^\s*(?:{DIAS}[,\s]+)?(\d{{1,2}})\s*(e|a|,)\s*(\d{{1,2}})(?![\d/.h:])\s*[-–—:)]\s*(.+)$", re.I)
 _DIA = re.compile(rf"^\s*(?:{DIAS}[,\s]+)?(\d{{1,2}})(?![\d/.h:])\s*(?:[-–—:)]\s*|\s+)", re.I)
 
 
@@ -53,7 +55,9 @@ def tipo_por_titulo(t):
 def parse_texto(texto, ano):
     """Cada item: linha, titulo, data=(a,m,d)|None, hora=(h,m)|None, local, tipo|None, erro."""
     itens, mes_ctx, ano_ctx = [], None, ano
-    for bruto in texto.splitlines():
+    fila = deque(texto.splitlines())
+    while fila:
+        bruto = fila.popleft()
         l = bruto.strip()
         if not l:
             continue
@@ -63,6 +67,15 @@ def parse_texto(texto, ano):
             mes_ctx = MESES[cab.group(1).lower()]
             ano_ctx = int(cab.group(2)) if cab.group(2) else ano_ctx
             continue
+        if mes_ctx:
+            mm = _MULTI.match(l)
+            if mm:
+                d1, sep, d2 = int(mm.group(1)), mm.group(2).lower(), int(mm.group(3))
+                dias = list(range(d1, d2 + 1)) if sep == "a" and 0 < d2 - d1 <= 14 else [d1, d2]
+                if all(_ok(ano_ctx, mes_ctx, d) for d in dias):
+                    for d in reversed(dias):
+                        fila.appendleft(f"{d:02d} - {mm.group(4)}")
+                    continue
         data, span = _achar_data(l, ano_ctx)
         if data is None and mes_ctx:
             m = _DIA.match(l)

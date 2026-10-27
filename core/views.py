@@ -3,6 +3,7 @@ from .decorators import login_required
 import json
 from django.http import Http404, HttpResponse, JsonResponse
 from django.templatetags.static import static
+import unicodedata
 from .importacao import parse_texto
 from .notificacoes import notificar, vapid_keys
 from datetime import datetime, timedelta
@@ -718,8 +719,29 @@ def importar_eventos(request):
         ano = ano_atual
     hora = request.POST.get("hora") or "19:00"
     tipo_padrao = request.POST.get("tipo") if request.POST.get("tipo") in tipos_validos else "culto"
+    texto = request.POST.get("texto", "")
+    pdf = request.FILES.get("pdf")
+    if pdf:
+        if pdf.size > 8_000_000:
+            messages.error(request, "PDF muito grande (máximo 8 MB).")
+            return render(request, "importar.html", ctx)
+        try:
+            from .importacao_pdf import extrair_texto_pdf
+            texto = extrair_texto_pdf(pdf)
+        except ImportError:
+            messages.error(request, "Falta instalar a biblioteca de PDF: rode pip install -r requirements.txt")
+            return render(request, "importar.html", ctx)
+        except Exception:
+            messages.error(request, "Não consegui ler este PDF. Tente colar o texto do calendário na caixa.")
+            return render(request, "importar.html", ctx)
+    norm = lambda s: "".join(c for c in unicodedata.normalize("NFKD", s.lower()) if not unicodedata.combining(c))
+    filtro = [x for x in (norm(s).strip() for s in request.POST.get("filtro", "").split(",")) if x]
+    itens = parse_texto(texto, ano)
+    lidas = len(itens)
+    if filtro:
+        itens = [it for it in itens if any(f in norm(it["linha"]) for f in filtro)]
     linhas = []
-    for i, it in enumerate(parse_texto(request.POST.get("texto", ""), ano)):
+    for i, it in enumerate(itens):
         quando, dup = "", False
         if it["data"]:
             h, mi = it["hora"] or tuple(int(x) for x in hora.split(":")[:2])
@@ -729,9 +751,9 @@ def importar_eventos(request):
         linhas.append(dict(i=i, quando=quando, dup=dup, tipo=it["tipo"] or tipo_padrao,
                            marcado=not it["erro"] and not dup, **{k: it[k] for k in ("linha", "titulo", "local", "erro")}))
     if not linhas:
-        messages.error(request, "Cole o texto do calendário na caixa.")
+        messages.error(request, "Nada encontrado. Envie o PDF, cole o texto do calendário ou ajuste o filtro.")
         return render(request, "importar.html", ctx)
-    return render(request, "importar.html", dict(ctx, banda=banda, linhas=linhas, total=len(linhas)))
+    return render(request, "importar.html", dict(ctx, banda=banda, linhas=linhas, total=len(linhas), lidas=lidas, mostradas=len(linhas)))
 
 
 @login_required

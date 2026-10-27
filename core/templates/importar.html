@@ -5,8 +5,9 @@
 <p><a href="{% url 'eventos' %}">← Voltar aos eventos</a></p>
 {% if linhas %}
 <div class="card fm"><h2>👀 Confira antes de importar</h2>
-<p class="mut">Banda: <b>{{ banda.nome }}</b>. Corrija o que precisar e desmarque o que não quer importar. Itens com ⚠️ já existem ou têm problema e vêm desmarcados.</p>
-<form method="post">{% csrf_token %}<input type="hidden" name="acao" value="confirmar"><input type="hidden" name="banda" value="{{ banda.pk }}"><input type="hidden" name="total" value="{{ total }}">
+<p class="mut">Banda: <b>{{ banda.nome }}</b>. Corrija o que precisar e desmarque o que não quer importar. Itens com ⚠️ já existem ou têm problema e vêm desmarcados. Mostrando {{ mostradas }} de {{ lidas }} linha(s) lidas.</p>
+<p><button type="button" class="sec" onclick="document.querySelectorAll('.lin input[type=checkbox]').forEach(c=>c.checked=true)">Marcar todos</button> <button type="button" class="sec" onclick="document.querySelectorAll('.lin input[type=checkbox]').forEach(c=>c.checked=false)">Desmarcar todos</button></p>
+<form method="post" id="form-conf">{% csrf_token %}<input type="hidden" name="acao" value="confirmar"><input type="hidden" name="banda" value="{{ banda.pk }}"><input type="hidden" name="total" value="{{ total }}">
 {% for l in linhas %}<div class="lin"><label><input type="checkbox" name="ok_{{ l.i }}" {% if l.marcado %}checked{% endif %}>
 {% if l.erro %}<span class="tag recusado">⚠️ {{ l.erro }}</span>{% elif l.dup %}<span class="tag">⚠️ Já existe</span>{% else %}<span class="tag confirmado">OK</span>{% endif %}
 <span class="mut">{{ l.linha }}</span></label>
@@ -15,15 +16,19 @@
 <select name="tipo_{{ l.i }}">{% for v, n in tipos %}<option value="{{ v }}" {% if v == l.tipo %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
 <input name="local_{{ l.i }}" value="{{ l.local }}" placeholder="Local"></div></div>{% endfor %}
 <p style="margin-top:12px"><button>✅ Importar selecionados</button> <a href="{% url 'importar_eventos' %}">Cancelar</a></p></form></div>
+<script>document.getElementById("form-conf").addEventListener("submit",function(){document.querySelectorAll(".lin").forEach(function(l){var c=l.querySelector("input[type=checkbox]");if(c&&!c.checked)l.querySelectorAll("input:not([type=checkbox]),select").forEach(function(i){i.disabled=true})})});</script>
 {% else %}
 <div class="card fm"><h2>📥 Importar calendário</h2>
-<form method="post">{% csrf_token %}<input type="hidden" name="acao" value="previa">
+<form method="post" enctype="multipart/form-data">{% csrf_token %}<input type="hidden" name="acao" value="previa">
 <p><label>Banda<br><select name="banda">{% for b in bandas %}<option value="{{ b.pk }}">{{ b.nome }}</option>{% endfor %}</select></label></p>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">
 <p><label>Ano (se faltar na data)<br><input type="number" name="ano" value="{{ ano }}"></label></p>
 <p><label>Horário padrão<br><input type="time" name="hora" value="{{ hora }}"></label></p>
 <p><label>Tipo padrão<br><select name="tipo">{% for v, n in tipos %}<option value="{{ v }}" {% if v == tipo %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label></p></div>
-<p><label>Cole o calendário aqui (uma linha por evento)<br>
+<p><label>📄 Enviar o PDF do calendário (opcional)<br><input type="file" name="pdf" accept="application/pdf,.pdf"></label></p>
+<p><label>Só importar eventos que contenham (opcional)<br><input name="filtro" placeholder="ex.: culto, vigília, santa ceia"></label></p>
+<p class="mut">Se você enviar o PDF, ele é usado no lugar do texto abaixo. O filtro vale para o PDF e para o texto.</p>
+<p><label>Ou cole o calendário aqui (uma linha por evento)<br>
 <textarea name="texto" rows="10" placeholder="25/12 – Culto de Natal – 19h&#10;31/12/2026 20h30 Vigília @ Templo&#10;&#10;Janeiro&#10;05 - Ensaio geral&#10;12 – Culto de Domingo">{{ texto }}</textarea></label></p>
 <button>🔍 Pré-visualizar</button></form>
 <p class="mut" style="margin-top:12px"><b>Dicas:</b> funciona com datas como 25/12, 25/12/2026, 25 de dezembro ou 2026-12-25, horas como 19h, 19h30 ou 19:30, e <b>@ local</b> no fim da linha.
