@@ -21,3 +21,14 @@ def avatar(user_id, nome, foto_em=None, tamanho=40):
     ini = (str(nome or "?").strip()[:1] or "?").upper()
     return format_html('<span class="av ini" style="width:{0}px;height:{0}px;font-size:{1}px">{2}</span>',
                        tamanho, int(int(tamanho) * 0.42), ini)
+
+
+@register.simple_tag
+def avatar_banda(banda_id, nome, foto_em=None, tamanho=44):
+    """Foto da banda (ou a inicial do nome) em círculo."""
+    if foto_em:
+        return format_html('<img class="av" src="{}?v={}" width="{}" height="{}" alt="">',
+                           reverse("banda_foto", args=[banda_id]), int(foto_em.timestamp()), tamanho, tamanho)
+    ini = (str(nome or "?").strip()[:1] or "?").upper()
+    return format_html('<span class="av ini" style="width:{0}px;height:{0}px;font-size:{1}px">{2}</span>',
+                       tamanho, int(int(tamanho) * 0.42), ini)

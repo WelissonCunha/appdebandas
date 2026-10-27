@@ -6,6 +6,6 @@
 <p class="mut">{{ b.descricao }}</p>
 {% for m in b.membros.all %}<p><input type="checkbox" name="ids" value="{{ m.pk }}" form="form-lote" {% if m.user_id == user.pk %}disabled title="Você não pode remover a si mesmo"{% endif %}> <b>{{ m.user.get_full_name|default:m.user.username }}</b>
 <span class="tag {% if m.papel == 'lider' %}confirmado{% endif %}">{{ m.get_papel_display }}</span><br>
-<span class="mut">@{{ m.user.username }} · {{ m.instrumentos|default:"sem instrumentos" }}</span>
+<span class="mut">@{{ m.user.username }} · {{ m.instrumentos|default:"sem instrumentos" }}{% if m.vocal %} · 🎤{% endif %}{% if m.back %} · 🎶{% endif %}{% if m.instrumental %} · 🎸{% endif %}</span>
 · <a href="{% url 'membro_editar' m.pk %}">✏️ Editar</a></p>{% endfor %}</div>{% endfor %}
 {% endblock %}

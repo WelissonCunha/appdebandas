@@ -262,7 +262,8 @@ def membro_novo(request):
                 u = User.objects.create_user(d["username"], email=d["email"], first_name=d["nome"], password=d["senha"])
                 Perfil.objects.update_or_create(user=u, defaults={"trocar_senha": True})
             _, criado = Membro.objects.get_or_create(
-                user=u, banda=d["banda"], defaults=dict(papel=d["papel"], instrumentos=d["instrumentos"]))
+                user=u, banda=d["banda"], defaults=dict(papel=d["papel"], instrumentos=d["instrumentos"], vocal=d["vocal"], back=d["back"],
+                              instrumental=d["instrumental"]))
             if criado:
                 messages.success(request, "Membro adicionado!")
                 return redirect("membros")
@@ -892,3 +893,44 @@ def mensagem_excluir(request, pk):
     if msg.autor_id == request.user.id or msg.banda.membros.filter(user=request.user, papel="lider").exists():
         msg.delete()
     return redirect(reverse("mensagens") + f"?banda={msg.banda_id}")
+
+
+# ---------- página da banda ----------
+
+@login_required
+def banda_detalhe(request, pk):
+    banda = get_object_or_404(Banda, pk=pk, membros__user=request.user)
+    aba = "membros" if request.GET.get("aba") == "membros" else "equipes"
+    membros = list(banda.membros.select_related("user__perfil").order_by("papel", "user__first_name", "user__username"))
+    grupos = [("🎤 Vocal", [m for m in membros if m.vocal]), ("🎶 Back", [m for m in membros if m.back]),
+              ("🎸 Instrumental", [m for m in membros if m.instrumental])]
+    lider = any(m.user_id == request.user.id and m.papel == "lider" for m in membros)
+    return render(request, "banda_detalhe.html", dict(banda=banda, aba=aba, membros=membros, grupos=grupos, lider=lider))
+
+
+@login_required
+def banda_foto(request, pk):
+    if not Membro.objects.filter(banda_id=pk, user=request.user).exists():
+        raise Http404
+    f = get_object_or_404(BandaFoto, banda_id=pk)
+    resp = HttpResponse(bytes(f.dados), content_type="image/jpeg")
+    resp["Cache-Control"] = "private, max-age=86400"
+    return resp
+
+
+@login_required
+@require_POST
+def banda_foto_enviar(request, pk):
+    banda = _banda_lider(request, pk)
+    if request.POST.get("remover"):
+        BandaFoto.objects.filter(banda=banda).delete()
+        Banda.objects.filter(pk=banda.pk).update(foto_em=None)
+        messages.success(request, "Foto removida.")
+        return redirect("banda_detalhe", pk=banda.pk)
+    arq = request.FILES.get("foto")
+    dados = arq.read() if arq else b""
+    if not dados or len(dados) > 300_000 or dados[:3] != b"\xff\xd8\xff":
+        return JsonResponse({"ok": False}, status=400)
+    BandaFoto.objects.update_or_create(banda=banda, defaults=dict(dados=dados))
+    Banda.objects.filter(pk=banda.pk).update(foto_em=timezone.now())
+    return JsonResponse({"ok": True})

@@ -7,6 +7,7 @@ TONS = [(t, t) for t in ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"]]
 class Banda(models.Model):
     nome = models.CharField(max_length=100)
     descricao = models.TextField(blank=True)
+    foto_em = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.nome
@@ -18,6 +19,9 @@ class Membro(models.Model):
     banda = models.ForeignKey(Banda, on_delete=models.CASCADE, related_name="membros")
     papel = models.CharField(max_length=10, choices=PAPEIS, default="membro")
     instrumentos = models.CharField(max_length=200, blank=True, help_text="Ex.: Violão, Baixo, Vocal")
+    vocal = models.BooleanField("Equipe: Vocal", default=False)
+    back = models.BooleanField("Equipe: Back", default=False)
+    instrumental = models.BooleanField("Equipe: Instrumental", default=False)
 
     class Meta:
         unique_together = ("user", "banda")
@@ -166,3 +170,8 @@ class Mensagem(models.Model):
 
     class Meta:
         ordering = ["criado"]
+
+
+class BandaFoto(models.Model):
+    banda = models.OneToOneField(Banda, on_delete=models.CASCADE, related_name="foto")
+    dados = models.BinaryField()

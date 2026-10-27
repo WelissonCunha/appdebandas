@@ -5,8 +5,8 @@
 {% if pode_criar_banda and not eh_lider %}<div class="card"><h2>Você ainda não tem banda</h2><p><a href="{% url 'banda_nova' %}"><button>+ Criar minha banda</button></a></p></div>{% endif %}
 
 <div class="card"><h2>🎸 Meus ministérios</h2>
-{% for mm in meus_membros %}<a class="linha" href="{% url 'equipe' %}?banda={{ mm.banda_id }}"><div><b>{{ mm.banda.nome }}</b>
-<div class="mut">{{ mm.get_papel_display }}{% if mm.instrumentos %} · {{ mm.instrumentos }}{% endif %} · {{ mm.n }} membro(s)</div></div><span class="mut">›</span></a>
+{% for mm in meus_membros %}<a class="linha" href="{% url 'banda_detalhe' mm.banda_id %}"><div class="quem">{% avatar_banda mm.banda_id mm.banda.nome mm.banda.foto_em 44 %}<div><b>{{ mm.banda.nome }}</b>
+<div class="mut">{{ mm.get_papel_display }}{% if mm.instrumentos %} · {{ mm.instrumentos }}{% endif %} · {{ mm.n }} membro(s)</div></div></div><span class="mut">›</span></a>
 {% empty %}<p class="mut">Você ainda não participa de nenhum ministério.</p>{% endfor %}</div>
 
 <div class="card"><h2>📢 Avisos</h2>

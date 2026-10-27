@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load menu %}{% block content %}
+<style>.ph{text-align:center}.ph label{position:relative;display:inline-block}.ph label.edit{cursor:pointer}
+.cam{position:absolute;right:-4px;bottom:-4px;background:var(--pri);color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:15px;border:3px solid var(--card)}
+.ph h1{margin:.1em 0 .5em}.ph .inl{display:inline;margin:0}</style>
+<p><a href="{% url 'home' %}">← Início</a></p>
+<div class="card ph"><h1>{{ banda.nome }}</h1>
+<label {% if lider %}for="foto-input" class="edit"{% endif %}>{% avatar_banda banda.pk banda.nome banda.foto_em 112 %}{% if lider %}<span class="cam">📷</span>{% endif %}</label>
+{% if lider %}<input type="file" id="foto-input" accept="image/*" hidden>{% endif %}
+{% if banda.descricao %}<p class="mut" style="margin-top:12px">{{ banda.descricao }}</p>{% endif %}
+{% if lider %}<p class="mut" id="foto-st">Toque na foto para trocá-la.</p>
+<p><a href="{% url 'banda_editar' banda.pk %}">✏️ Editar banda</a>
+{% if banda.foto_em %} · <form method="post" action="{% url 'banda_foto_enviar' banda.pk %}" class="inl">{% csrf_token %}<input type="hidden" name="remover" value="1"><button class="sec" style="min-height:0;padding:3px 10px;font-size:.8rem">Remover foto</button></form>{% endif %}</p>{% endif %}</div>
+
+<div class="seg"><a class="{% if aba == 'equipes' %}on{% endif %}" href="?aba=equipes">🎼 Equipes</a>
+<a class="{% if aba == 'membros' %}on{% endif %}" href="?aba=membros">👥 Membros ({{ membros|length }})</a></div>
+
+{% if aba == 'equipes' %}
+{% for titulo, lista in grupos %}<div class="card"><h2>{{ titulo }} <span class="mut">({{ lista|length }})</span></h2>
+{% for m in lista %}<div class="linha"><div class="quem">{% avatar m.user_id m.user.get_full_name|default:m.user.username m.user.perfil.foto_em 40 %}
+<div><b>{{ m.user.get_full_name|default:m.user.username }}</b><div class="mut">{{ m.instrumentos|default:"—" }}</div></div></div></div>
+{% empty %}<p class="mut">Ninguém nesta equipe ainda.{% if lider %} Defina em <a href="{% url 'membros' %}">Gerenciar membros</a>.{% endif %}</p>{% endfor %}</div>{% endfor %}
+{% else %}
+<div class="card"><h2>👥 Membros</h2>
+{% for m in membros %}<div class="linha"><div class="quem">{% avatar m.user_id m.user.get_full_name|default:m.user.username m.user.perfil.foto_em 44 %}
+<div><b>{{ m.user.get_full_name|default:m.user.username }}</b> <span class="tag {% if m.papel == 'lider' %}confirmado{% endif %}">{{ m.get_papel_display }}</span>
+<div class="mut">{{ m.instrumentos|default:"—" }}{% if m.user.perfil.nascimento %} · 🎂 {{ m.user.perfil.nascimento|date:"d/m" }}{% endif %}</div></div></div></div>{% endfor %}</div>
+{% endif %}
+{% if lider %}<script>
+const inp = document.getElementById("foto-input"), st = document.getElementById("foto-st");
+inp.addEventListener("change", () => {
+  const f = inp.files[0]; if (!f) return;
+  const img = new Image(), url = URL.createObjectURL(f);
+  st.textContent = "Enviando...";
+  img.onload = () => {
+    const s = Math.min(img.width, img.height), c = document.createElement("canvas");
+    c.width = c.height = 256;
+    c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 256, 256);
+    URL.revokeObjectURL(url);
+    c.toBlob(async b => {
+      const fd = new FormData(); fd.append("foto", b, "foto.jpg");
+      const r = await fetch("{% url 'banda_foto_enviar' banda.pk %}", {method: "POST", headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value}, body: fd});
+      if (r.ok) location.reload(); else st.textContent = "Não foi possível enviar a foto.";
+    }, "image/jpeg", 0.85);
+  };
+  img.onerror = () => { st.textContent = "Arquivo de imagem inválido."; };
+  img.src = url;
+});
+</script>{% endif %}
+{% endblock %}

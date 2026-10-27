@@ -61,7 +61,7 @@ class MusicaForm(forms.ModelForm):
 class MembroForm(forms.ModelForm):
     class Meta:
         model = Membro
-        fields = ["papel", "instrumentos"]
+        fields = ["papel", "instrumentos", "vocal", "back", "instrumental"]
 
 
 class MembroNovoForm(forms.Form):
@@ -74,6 +74,9 @@ class MembroNovoForm(forms.Form):
                             help_text="Senha provisória, só para login novo. Peça para a pessoa trocar em 🔑 Senha.")
     papel = forms.ChoiceField(choices=Membro.PAPEIS)
     instrumentos = forms.CharField(max_length=200, required=False, help_text="Ex.: Violão, Vocal")
+    vocal = forms.BooleanField(required=False, label="Equipe: Vocal")
+    back = forms.BooleanField(required=False, label="Equipe: Back")
+    instrumental = forms.BooleanField(required=False, label="Equipe: Instrumental")
 
     def __init__(self, *a, user=None, **k):
         super().__init__(*a, **k)
