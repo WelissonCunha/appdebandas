@@ -1,4 +1,4 @@
-<p><a href="{% url 'evento' ev.pk %}"><b>{{ ev.titulo }}</b></a> <span class="tag">{{ ev.get_tipo_display }}</span><br>
+<p><input type="checkbox" name="ids" value="{{ ev.pk }}" form="form-lote"> <a href="{% url 'evento' ev.pk %}"><b>{{ ev.titulo }}</b></a> <span class="tag">{{ ev.get_tipo_display }}</span><br>
 <span class="mut">{{ ev.data_hora|date:"d/m/Y H:i" }} · {{ ev.banda }}{% if ev.local %} · {{ ev.local }}{% endif %}</span><br>
 <a href="{% url 'evento_editar' ev.pk %}">✏️ Editar</a>
 <form class="inl" method="post" action="{% url 'evento_excluir' ev.pk %}" onsubmit="return confirm('Excluir {{ ev.titulo|escapejs }}? A escala e o setlist dele também serão apagados.')">{% csrf_token %}<button class="no">🗑️ Excluir</button></form></p>

@@ -1,0 +1,20 @@
+<form id="form-lote" method="post" action="{{ acao }}" class="barra-lote">{% csrf_token %}
+<label><input type="checkbox" id="sel-todos"> Selecionar todos</label>
+<button class="no" disabled>🗑️ Excluir selecionados (0)</button></form>
+<style>.barra-lote{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0 0 12px}.barra-lote label{cursor:pointer}</style>
+<script>
+(function () {
+  const f = document.getElementById("form-lote"), todos = document.getElementById("sel-todos"), btn = f.querySelector("button");
+  const itens = () => [...document.querySelectorAll('input[name="ids"][form="form-lote"]')].filter(i => !i.disabled);
+  const marcados = () => itens().filter(i => i.checked).length;
+  function atualizar() {
+    const n = marcados(), t = itens().length;
+    btn.disabled = !n; btn.textContent = "🗑️ Excluir selecionados (" + n + ")";
+    todos.checked = t > 0 && n === t; todos.indeterminate = n > 0 && n < t;
+  }
+  todos.addEventListener("change", () => { itens().forEach(i => i.checked = todos.checked); atualizar(); });
+  document.addEventListener("change", e => { if (e.target.name === "ids") atualizar(); });
+  f.addEventListener("submit", e => { if (!confirm("{{ aviso|escapejs }}".replace("{n}", marcados()))) e.preventDefault(); });
+  atualizar();
+})();
+</script>

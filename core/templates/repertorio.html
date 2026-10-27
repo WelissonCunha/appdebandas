@@ -3,7 +3,8 @@
 <style>.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}</style>
 {% if eh_lider %}<p><a href="{% url 'musica_nova' %}"><button>+ Nova música</button></a></p>{% endif %}
 <div class="card"><h2>🎼 Repertório</h2><form><input name="q" value="{{ q }}" placeholder="Buscar música ou artista"> <button>Buscar</button></form></div>
-{% for m in musicas %}<div class="card"><b>{{ m.titulo }}</b> <span class="mut">{{ m.artista }}</span><br>
+{% if eh_lider and musicas %}{% url 'musica_excluir_lote' as u %}{% include "_lote_barra.html" with acao=u aviso="Excluir {n} música(s)? Elas também saem dos setlists dos eventos. Não dá para desfazer." %}{% endif %}
+{% for m in musicas %}<div class="card">{% if eh_lider %}<input type="checkbox" name="ids" value="{{ m.pk }}" form="form-lote"> {% endif %}<b>{{ m.titulo }}</b> <span class="mut">{{ m.artista }}</span><br>
 <span class="mut">Tom {{ m.tom|default:"—" }} · {{ m.bpm|default:"—" }} bpm</span>{% if m.link %} · <a href="{{ m.link }}" target="_blank">ouvir</a>{% endif %}
 {% if eh_lider %}<br><a href="{% url 'musica_editar' m.pk %}">✏️ Editar</a>
 <form class="inl" method="post" action="{% url 'musica_excluir' m.pk %}" onsubmit="return confirm('Excluir {{ m.titulo|escapejs }}? Ela também sai dos setlists dos eventos.')">{% csrf_token %}<button class="no">🗑️ Excluir</button></form>{% endif %}</div>

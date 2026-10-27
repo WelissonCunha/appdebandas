@@ -733,3 +733,57 @@ def importacao_desfazer(request, pk):
     imp.delete()
     messages.success(request, f"Importação desfeita: {n} evento(s) removido(s).")
     return redirect("importar_eventos")
+
+
+# ---------- exclusão em lote ----------
+
+def _ids(request):
+    return [int(i) for i in request.POST.getlist("ids") if i.isdigit()]
+
+
+@login_required
+@require_POST
+def evento_excluir_lote(request):
+    qs = Evento.objects.filter(pk__in=_ids(request), banda__membros__user=request.user, **LIDER)
+    n = qs.count()
+    qs.delete()
+    messages.success(request, f"{n} evento(s) excluído(s).") if n else messages.error(request, "Nenhum evento selecionado.")
+    return redirect("eventos")
+
+
+@login_required
+@require_POST
+def musica_excluir_lote(request):
+    qs = Musica.objects.filter(pk__in=_ids(request), banda__membros__user=request.user, **LIDER)
+    n = qs.count()
+    qs.delete()
+    messages.success(request, f"{n} música(s) excluída(s).") if n else messages.error(request, "Nenhuma música selecionada.")
+    return redirect("repertorio")
+
+
+@login_required
+@require_POST
+def membro_excluir_lote(request):
+    alvos = (Membro.objects.filter(pk__in=_ids(request), banda__membros__user=request.user, **LIDER)
+             .select_related("banda"))
+    por_banda = {}
+    for m in alvos:
+        por_banda.setdefault(m.banda_id, []).append(m)
+    removidos = bloqueados = 0
+    for banda_id, grupo in por_banda.items():
+        lideres = Membro.objects.filter(banda_id=banda_id, papel="lider").count()
+        lideres_alvo = sum(1 for m in grupo if m.papel == "lider")
+        for m in grupo:
+            if m.user_id == request.user.id or (m.papel == "lider" and lideres - lideres_alvo <= 0):
+                bloqueados += 1
+                continue
+            m.delete()
+            removidos += 1
+    if removidos:
+        messages.success(request, f"{removidos} membro(s) removido(s).")
+    if bloqueados:
+        messages.error(request, f"{bloqueados} não foi(ram) removido(s): você não pode remover a si mesmo "
+                                "nem deixar a banda sem líder.")
+    if not removidos and not bloqueados:
+        messages.error(request, "Nenhum membro selecionado.")
+    return redirect("membros")
