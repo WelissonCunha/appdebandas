@@ -47,6 +47,7 @@ urlpatterns = [
     path("foto/<int:pk>/", v.foto, name="foto"),
     path("equipe/", v.equipe, name="equipe"),
     path("mensagens/", v.mensagens, name="mensagens"),
+    path("mensagens/nao-lidas/", v.mensagens_nao_lidas, name="mensagens_nao_lidas"),
     path("mensagens/enviar/", v.mensagem_enviar, name="mensagem_enviar"),
     path("mensagens/<int:pk>/excluir/", v.mensagem_excluir, name="mensagem_excluir"),
     path("senha/", v.AlterarSenhaView.as_view(), name="alterar_senha"),

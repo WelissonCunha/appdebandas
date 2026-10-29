@@ -74,8 +74,9 @@ a.linha:hover{text-decoration:none}.quem{display:flex;align-items:center;gap:12p
 /* barra inferior */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:var(--card);border-top:1px solid var(--bd);
 padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px #1d1d280d}
-.tabbar a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 8px;color:var(--mut);font-size:10px;font-weight:500;text-decoration:none}
+.tabbar a{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 8px;color:var(--mut);font-size:10px;font-weight:500;text-decoration:none}
 .tabbar a span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{position:absolute;top:3px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--no);color:#fff;font:700 10px/1 Inter,system-ui,sans-serif;display:grid;place-items:center;border:2px solid var(--card);box-sizing:content-box;font-style:normal}.badge[hidden]{display:none}
 .tabbar a.on{color:var(--pri);font-weight:700}.tabbar a.on svg{stroke-width:2.4}
 @media(min-width:760px){.tabbar{max-width:720px;left:50%;transform:translateX(-50%);border-radius:18px 18px 0 0;border:1px solid var(--bd);border-bottom:0}}
 </style></head><body>
@@ -92,7 +93,7 @@ padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px #1d1d280d}
 <symbol id="i-go" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol>
 <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
 </defs></svg>
-{% usuario_eh_lider as lider_menu %}
+{% usuario_eh_lider as lider_menu %}{% nao_lidas as n_msg %}
 {% if user.is_authenticated %}
 <header class="top">
 {% if lider_menu or user.is_staff %}<button class="ico" id="b-menu" aria-label="Abrir menu"><svg class="ic"><use href="#i-menu"/></svg></button>{% endif %}
@@ -123,7 +124,7 @@ padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px #1d1d280d}
 <a href="{% url 'minhas_escalas' %}" class="{% if n == 'minhas_escalas' %}on{% endif %}"><svg class="ic"><use href="#i-cal"/></svg><span>Escalas</span></a>
 <a href="{% url 'trocas' %}" class="{% if n == 'trocas' or n == 'troca_pedir' %}on{% endif %}"><svg class="ic"><use href="#i-swap"/></svg><span>Trocas</span></a>
 <a href="{% url 'repertorio' %}" class="{% if n == 'repertorio' %}on{% endif %}"><svg class="ic"><use href="#i-music"/></svg><span>Repertório</span></a>
-<a href="{% url 'mensagens' %}" class="{% if n == 'mensagens' %}on{% endif %}"><svg class="ic"><use href="#i-chat"/></svg><span>Mensagens</span></a>
+<a href="{% url 'mensagens' %}" class="{% if n == 'mensagens' %}on{% endif %}"><svg class="ic"><use href="#i-chat"/></svg><i class="badge" id="badge-msg"{% if not n_msg %} hidden{% endif %}>{% if n_msg > 99 %}99+{% else %}{{ n_msg }}{% endif %}</i><span>Mensagens</span></a>
 <a href="{% url 'perfil' %}" class="{% if n == 'perfil' or n == 'equipe' or n == 'notificacoes' or n == 'alterar_senha' %}on{% endif %}"><svg class="ic"><use href="#i-user"/></svg><span>Perfil</span></a>
 {% endwith %}</nav>
 {% endif %}
@@ -133,5 +134,6 @@ function t(v){b.classList.toggle("menu-aberto",v)}
 m.onclick=function(){t(true)};document.getElementById("b-fechar").onclick=function(){t(false)};
 document.getElementById("fundo").onclick=function(){t(false)};
 document.addEventListener("keydown",function(e){if(e.key==="Escape")t(false)});})();
+(function(){var b=document.getElementById("badge-msg");if(!b||document.getElementById("chat"))return;function atualizar(){if(document.hidden)return;fetch("{% url 'mensagens_nao_lidas' %}",{credentials:"same-origin"}).then(function(r){return r.ok?r.json():null}).then(function(d){if(!d)return;b.textContent=d.total>99?"99+":d.total;b.hidden=!d.total}).catch(function(){})}setInterval(atualizar,30000);document.addEventListener("visibilitychange",atualizar);})();
 if("serviceWorker" in navigator){navigator.serviceWorker.register("{% url 'sw' %}")}
 </script></body></html>

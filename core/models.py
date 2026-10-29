@@ -175,3 +175,13 @@ class Mensagem(models.Model):
 class BandaFoto(models.Model):
     banda = models.OneToOneField(Banda, on_delete=models.CASCADE, related_name="foto")
     dados = models.BinaryField()
+
+
+class LeituraMensagens(models.Model):
+    """Até quando cada pessoa leu as mensagens de cada banda (base do contador de não lidas)."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="leituras")
+    banda = models.ForeignKey(Banda, on_delete=models.CASCADE, related_name="leituras")
+    ate = models.DateTimeField()
+
+    class Meta:
+        unique_together = ("user", "banda")

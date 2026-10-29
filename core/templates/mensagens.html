@@ -6,23 +6,28 @@
 .bolha .h{font-size:.7rem;opacity:.7;margin-top:3px}.bolha .tx{white-space:pre-wrap;word-break:break-word}
 .bolha form{display:inline}.bolha .x{background:none;color:inherit;min-height:0;padding:0 4px;font-size:.7rem;opacity:.7;font-weight:500}
 .comp{position:sticky;bottom:calc(66px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;background:var(--bg);padding:8px 0}
-.comp textarea{flex:1;resize:none;max-height:120px}</style>
-{% if bandas|length > 1 %}<div class="seg">{% for b in bandas %}<a class="{% if b.pk == banda.pk %}on{% endif %}" href="?banda={{ b.pk }}">{{ b.nome }}</a>{% endfor %}</div>{% endif %}
+.comp textarea{flex:1;resize:none;max-height:120px}
+.men{border-radius:6px;padding:0 4px;background:var(--pri-soft);color:var(--pri);font-weight:600}.minha .men{background:#ffffff33;color:#fff}
+.sug{position:absolute;left:0;right:0;bottom:100%;background:var(--card);border:1px solid var(--bd);border-radius:14px;box-shadow:var(--sh);max-height:210px;overflow:auto;margin-bottom:6px}.sug[hidden]{display:none}
+.sug button{display:flex;width:100%;gap:8px;justify-content:space-between;align-items:center;background:none;color:var(--tx);box-shadow:none;border-radius:0;min-height:46px;text-align:left;font-weight:500}.sug button:hover{background:var(--pri-soft);transform:none;box-shadow:none}
+.divnova{display:flex;align-items:center;gap:10px;color:var(--pri);font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin:6px 0 12px}.divnova::before,.divnova::after{content:"";flex:1;height:1px;background:var(--pri);opacity:.35}</style>
+{% if bandas|length > 1 %}<div class="seg">{% for b in bandas %}<a class="{% if b.pk == banda.pk %}on{% endif %}" href="?banda={{ b.pk }}">{{ b.nome }}{% if b.nao_lidas %} <span class="tag recusado">{{ b.nao_lidas }}</span>{% endif %}</a>{% endfor %}</div>{% endif %}
 {% if banda %}<h2>💬 Mensagens · {{ banda.nome }}</h2>
-<div id="chat">{% for m in msgs %}<div class="lm {% if m.autor_id == user.id %}minha{% endif %}">
+<div id="chat">{% for m in msgs %}{% if m.pk == primeira_nova %}<div class="divnova" id="novas">Novas mensagens</div>{% endif %}<div class="lm {% if m.autor_id == user.id %}minha{% endif %}">
 {% if m.autor_id != user.id %}{% avatar m.autor_id m.autor.get_full_name|default:m.autor.username m.foto_em 34 %}{% endif %}
-<div class="bolha"><div class="n">{{ m.autor.get_full_name|default:m.autor.username|default:"Ex-membro" }}</div><div class="tx">{{ m.texto }}</div>
+<div class="bolha"><div class="n">{{ m.autor.get_full_name|default:m.autor.username|default:"Ex-membro" }}</div><div class="tx">{{ m.texto|mencoes }}</div>
 <div class="h">{{ m.criado|date:"d/m H:i" }}{% if m.autor_id == user.id or lider_banda %} · <form method="post" action="{% url 'mensagem_excluir' m.pk %}" onsubmit="return confirm('Apagar esta mensagem?')">{% csrf_token %}<button class="x">apagar</button></form>{% endif %}</div></div></div>
 {% empty %}<p class="mut">Nenhuma mensagem ainda. Comece a conversa!</p>{% endfor %}</div>
 <form class="comp" method="post" action="{% url 'mensagem_enviar' %}">{% csrf_token %}<input type="hidden" name="banda" value="{{ banda.pk }}">
-<textarea name="texto" rows="1" maxlength="1000" placeholder="Escreva uma mensagem..." required></textarea><button>Enviar</button></form>
+<div class="sug" id="sug" hidden></div><textarea name="texto" rows="1" maxlength="1000" placeholder="Escreva uma mensagem... use @ para mencionar" required></textarea><button>Enviar</button></form>
 <script>
 const chat = document.getElementById("chat"), fim = () => window.scrollTo(0, document.body.scrollHeight);
-fim();
+const nv = document.getElementById("novas");
+if (nv) nv.scrollIntoView({block: "center"}); else fim();
 setInterval(async () => {
   if (document.hidden) return;
   try {
-    const r = await fetch(location.href, {credentials: "same-origin"});
+    const r = await fetch(location.href + (location.search ? "&" : "?") + "poll=1", {credentials: "same-origin"});
     const novo = new DOMParser().parseFromString(await r.text(), "text/html").getElementById("chat");
     if (novo && novo.innerHTML !== chat.innerHTML) {
       const perto = window.innerHeight + window.scrollY >= document.body.scrollHeight - 140;
@@ -30,6 +35,35 @@ setInterval(async () => {
     }
   } catch (e) {}
 }, 12000);
+</script>
+{{ membros_js|json_script:"membros-js" }}
+<script>
+const MEMBROS = JSON.parse(document.getElementById("membros-js").textContent);
+const ta = document.querySelector(".comp textarea"), sug = document.getElementById("sug");
+const sem = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+function termo() {
+  const pos = ta.selectionStart, m = ta.value.slice(0, pos).match(/(?:^|\s)@([\w.\-]*)$/);
+  return m ? {t: m[1], ini: pos - m[1].length - 1} : null;
+}
+function inserir(u, ini) {
+  const pos = ta.selectionStart;
+  ta.value = ta.value.slice(0, ini) + "@" + u + " " + ta.value.slice(pos);
+  const p = ini + u.length + 2; ta.setSelectionRange(p, p); ta.focus(); sug.hidden = true;
+}
+function mostrar() {
+  const x = termo(); if (!x) { sug.hidden = true; return; }
+  const lista = MEMBROS.filter(m => sem(m.n).includes(sem(x.t)) || m.u.toLowerCase().includes(x.t.toLowerCase())).slice(0, 6);
+  sug.innerHTML = ""; if (!lista.length) { sug.hidden = true; return; }
+  lista.forEach(m => {
+    const b = document.createElement("button"), a = document.createElement("span"), c = document.createElement("span");
+    b.type = "button"; a.textContent = m.n; c.className = "mut"; c.textContent = "@" + m.u; b.append(a, c);
+    b.addEventListener("pointerdown", e => { e.preventDefault(); inserir(m.u, x.ini); });
+    sug.appendChild(b);
+  });
+  sug.hidden = false;
+}
+ta.addEventListener("input", mostrar); ta.addEventListener("click", mostrar);
+ta.addEventListener("blur", () => setTimeout(() => { sug.hidden = true; }, 150));
 </script>
 {% else %}<div class="card"><p class="mut">Você ainda não participa de nenhum ministério.</p></div>{% endif %}
 {% endblock %}

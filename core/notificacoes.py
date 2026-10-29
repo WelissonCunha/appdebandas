@@ -50,7 +50,7 @@ def vapid_keys():
     return pub, priv
 
 
-def notificar(users, titulo, texto, caminho="/", exceto=None):
+def notificar(users, titulo, texto, caminho="/", exceto=None, email=True):
     """Avisa os usuários (respeitando as preferências de cada um) por e-mail e push."""
     envios, vistos = [], set()
     for u in users:
@@ -58,10 +58,10 @@ def notificar(users, titulo, texto, caminho="/", exceto=None):
             continue
         vistos.add(u.pk)
         p = getattr(u, "perfil", None)
-        email = u.email if (p.notif_email if p else True) and u.email else None
+        endereco = u.email if email and (p.notif_email if p else True) and u.email else None
         subs = list(u.push_subs.values_list("endpoint", "p256dh", "auth")) if (p.notif_push if p else True) else []
-        if email or subs:
-            envios.append((u.first_name or u.username, email, subs))
+        if endereco or subs:
+            envios.append((u.first_name or u.username, endereco, subs))
     if envios:
         threading.Thread(target=_enviar, args=(envios, titulo, texto, _site() + caminho), daemon=True).start()
 

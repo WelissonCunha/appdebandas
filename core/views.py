@@ -4,6 +4,8 @@ import json
 from django.http import Http404, HttpResponse, JsonResponse
 from django.templatetags.static import static
 import unicodedata
+from .leitura import contagens, marcar_lida
+from .mencoes import mencionados
 from .importacao import parse_texto
 from .notificacoes import notificar, vapid_keys
 from datetime import datetime, timedelta
@@ -886,15 +888,33 @@ def equipe(request):
 @login_required
 def mensagens(request):
     bandas, banda = _banda_escolhida(request)
-    msgs, lider_banda = [], False
+    cont = contagens(request.user)
+    msgs, lider_banda, primeira_nova, membros_js = [], False, None, []
     if banda:
+        ate = LeituraMensagens.objects.filter(user=request.user, banda=banda).values_list("ate", flat=True).first()
         msgs = list(banda.mensagens.select_related("autor").order_by("-criado")[:80])[::-1]
         fotos = dict(Perfil.objects.filter(user_id__in={x.autor_id for x in msgs if x.autor_id})
                      .values_list("user_id", "foto_em"))
         for x in msgs:
             x.foto_em = fotos.get(x.autor_id)
+        if ate and not request.GET.get("poll"):
+            primeira_nova = next((x.pk for x in msgs if x.criado > ate and x.autor_id != request.user.id), None)
         lider_banda = banda.membros.filter(user=request.user, papel="lider").exists()
-    return render(request, "mensagens.html", dict(bandas=bandas, banda=banda, msgs=msgs, lider_banda=lider_banda))
+        membros_js = [dict(u=x.user.username, n=x.user.get_full_name() or x.user.username)
+                      for x in banda.membros.select_related("user") if x.user_id != request.user.id]
+        if lider_banda:
+            membros_js.insert(0, dict(u="todos", n="Todos da banda"))
+        marcar_lida(request.user, banda.pk)
+        cont[banda.pk] = 0
+    for b in bandas:
+        b.nao_lidas = cont.get(b.pk, 0)
+    return render(request, "mensagens.html", dict(bandas=bandas, banda=banda, msgs=msgs, lider_banda=lider_banda,
+                                                  primeira_nova=primeira_nova, membros_js=membros_js))
+
+
+@login_required
+def mensagens_nao_lidas(request):
+    return JsonResponse({"total": sum(contagens(request.user).values())})
 
 
 @login_required
@@ -905,6 +925,11 @@ def mensagem_enviar(request):
     texto = request.POST.get("texto", "").strip()[:1000]
     if texto:
         Mensagem.objects.create(banda=banda, autor=request.user, texto=texto)
+        alvos = mencionados(texto, banda, request.user)
+        if alvos:
+            quem = request.user.get_full_name() or request.user.username
+            notificar(alvos, f"{quem} mencionou você em {banda.nome}", texto[:140],
+                      reverse("mensagens") + f"?banda={banda.pk}", email=False)
     return redirect(reverse("mensagens") + f"?banda={banda.pk}")
 
 
