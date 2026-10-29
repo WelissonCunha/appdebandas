@@ -18,7 +18,11 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.views import PasswordChangeView
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse, reverse_lazy
-from .forms import PerfilForm, bandas_do_lider, NotifForm, TrocaForm, SenhaForm, SenhaResetForm, AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
+from .forms import (
+    PerfilForm, bandas_do_lider, NotifForm, TrocaForm, SenhaForm, SenhaResetForm, AvisoForm,
+    EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm,
+    IndisponibilidadeForm,
+)
 from .models import *
 
 LIDER = dict(banda__membros__papel="lider")
@@ -65,7 +69,8 @@ def home(request):
     return render(request, "home.html", dict(
         minhas=minhas, eventos=eventos, avisos=avisos, indisp=indisp, meus_membros=meus_membros,
         anivers=anivers, hoje=hoje, mes_nome=MESES_PT[hoje.month - 1], eh_lider=_eh_lider(request.user),
-        pode_criar_banda=_pode_criar_banda(request.user), trocas_info=_trocas_info(request.user)))
+        pode_criar_banda=_pode_criar_banda(request.user), trocas_info=_trocas_info(request.user),
+        indisponibilidade_form=IndisponibilidadeForm(user=request.user)))
 
 
 @login_required
@@ -98,11 +103,17 @@ def responder(request, pk):
 @login_required
 def indisponibilidade(request):
     if request.method == "POST":
-        membro = Membro.objects.filter(user=request.user).first()
-        if membro and request.POST.get("data"):
-            Indisponibilidade.objects.create(membro=membro, data=request.POST["data"],
-                                             motivo=request.POST.get("motivo", ""))
+        form = IndisponibilidadeForm(request.POST, user=request.user)
+        if form.is_valid():
+            membro = get_object_or_404(Membro, user=request.user, banda=form.cleaned_data["banda"])
+            Indisponibilidade.objects.create(
+                membro=membro,
+                data=form.cleaned_data["data"],
+                motivo=form.cleaned_data["motivo"],
+            )
             messages.success(request, "Indisponibilidade registrada.")
+        else:
+            messages.error(request, "Selecione uma banda e informe uma data válida.")
     return redirect("home")
 
 
