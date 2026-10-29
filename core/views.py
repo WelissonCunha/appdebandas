@@ -651,7 +651,7 @@ def manifest(request):
     icones = [dict(src=static("core/icons/icon-192.png"), sizes="192x192", type="image/png", purpose="any"),
               dict(src=static("core/icons/icon-512.png"), sizes="512x512", type="image/png", purpose="any"),
               dict(src=static("core/icons/icon-maskable-512.png"), sizes="512x512", type="image/png", purpose="maskable")]
-    return JsonResponse(dict(name="Bandas", short_name="Bandas", description="Escalas, repertório e avisos da banda",
+    return JsonResponse(dict(name="Exalte", short_name="Exalte", description="Exalte: escalas, repertório e avisos do seu ministério",
                              start_url="/", scope="/", display="standalone", lang="pt-BR",
                              theme_color="#5b4bdb", background_color="#f6f6f9", icons=icones),
                         content_type="application/manifest+json")

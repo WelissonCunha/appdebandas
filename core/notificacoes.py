@@ -68,7 +68,7 @@ def notificar(users, titulo, texto, caminho="/", exceto=None):
 
 def _enviar(envios, titulo, texto, url):
     try:
-        msgs = [EmailMessage(f"[Bandas] {titulo}", f"Olá, {nome}!\n\n{texto}\n\nAbrir: {url}\n", _remetente(), [email])
+        msgs = [EmailMessage(f"[Exalte] {titulo}", f"Olá, {nome}!\n\n{texto}\n\nAbrir: {url}\n", _remetente(), [email])
                 for nome, email, _ in envios if email]
         if msgs:
             try:

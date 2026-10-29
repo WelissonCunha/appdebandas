@@ -1,5 +1,6 @@
 """Lê texto colado de um calendário e devolve uma lista de eventos candidatos."""
 import re
+import unicodedata
 from collections import deque
 from datetime import datetime
 
@@ -42,12 +43,12 @@ def _achar_data(l, ano):
 
 
 def tipo_por_titulo(t):
-    b = t.lower()
+    b = "".join(c for c in unicodedata.normalize("NFKD", t.lower()) if not unicodedata.combining(c))
     if "ensaio" in b:
         return "ensaio"
     if any(k in b for k in ("show", "apresenta", "concerto", "festival")):
         return "show"
-    if any(k in b for k in ("culto", "missa", "celebra", "louvor", "santa ceia", "vig")):
+    if any(k in b for k in ("culto", "missa", "celebra", "louvor", "santa ceia", "vig", "adora")):
         return "culto"
     return None
 

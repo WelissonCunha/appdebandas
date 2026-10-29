@@ -4,7 +4,7 @@ self.addEventListener("fetch", () => {});
 self.addEventListener("push", e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (_) {}
-  e.waitUntil(self.registration.showNotification(d.titulo || "Bandas", {
+  e.waitUntil(self.registration.showNotification(d.titulo || "Exalte", {
     body: d.texto || "", icon: "{% static 'core/icons/icon-192.png' %}",
     badge: "{% static 'core/icons/icon-192.png' %}", data: { url: d.url || "/" }
   }));

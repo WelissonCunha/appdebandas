@@ -1,12 +1,12 @@
 {% load menu static %}<!doctype html><html lang="pt-br"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>{% block title %}Bandas{% endblock %}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>{% block title %}Exalte{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="{% url 'manifest' %}"><meta name="theme-color" content="#5b4bdb">
-<link rel="apple-touch-icon" href="{% static 'core/icons/icon-192.png' %}"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="{% static 'core/icons/icon-192.png' %}"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Exalte">
 <style>
-:root{--bg:#f6f6f9;--card:#fff;--tx:#1d1d28;--mut:#6b6b7b;--pri:#5b4bdb;--pri-soft:#ecebfb;--ok:#1a9d5a;--no:#d23b3b;--bd:#e4e4ec;--sh:0 1px 2px #1d1d2812,0 6px 18px #1d1d280d}
-@media(prefers-color-scheme:dark){:root{--bg:#14141b;--card:#1f1f2a;--tx:#ececf3;--mut:#9a9aae;--bd:#2d2d3b;--pri-soft:#2b2858;--sh:0 1px 2px #0006}}
+:root{--bg:#f6f6f9;--card:#fff;--tx:#1d1d28;--mut:#6b6b7b;--pri:#5b4bdb;--pri-soft:#ecebfb;--ok:#1a9d5a;--no:#d23b3b;--bd:#e4e4ec;--sh:0 1px 2px #1d1d2812,0 6px 18px #1d1d280d;--pri2:#7c5cff;--field:#f2f2f9;--glow:#5b4bdb40}
+@media(prefers-color-scheme:dark){:root{--bg:#14141b;--card:#1f1f2a;--tx:#ececf3;--mut:#9a9aae;--bd:#2d2d3b;--pri-soft:#2b2858;--sh:0 1px 2px #0006;--field:#262634;--glow:#7c5cff59}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{scroll-padding-top:70px}
 body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);line-height:1.45;font-size:15px;
@@ -16,6 +16,7 @@ svg.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;strok
 /* topo */
 .top{position:sticky;top:0;z-index:30;background:var(--pri);color:#fff;display:flex;align-items:center;gap:6px;
 padding:calc(8px + env(safe-area-inset-top,0px)) 10px 8px;min-height:56px}
+.mark{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#ffffff26;border:1px solid #ffffff40;flex:none}.mark svg{width:20px;height:20px;stroke-width:2.4}
 .top .brand{font-weight:700;font-size:1.1rem;letter-spacing:-.01em;color:#fff;display:flex;align-items:center;gap:8px;flex:1}
 .top button.ico,.top a.ico{background:transparent;color:#fff;border:0;width:42px;height:42px;min-height:0;padding:0;border-radius:12px;display:grid;place-items:center}
 .top button.ico:hover,.top a.ico:hover{background:#ffffff26;text-decoration:none}
@@ -38,13 +39,30 @@ h1{font-size:1.35rem;margin:.1em 0 .5em;letter-spacing:-.02em}h2{margin:.1em 0 .
 .confirmado{background:var(--ok)}.recusado{background:var(--no)}
 .msg{background:var(--ok);color:#fff;padding:12px 14px;border-radius:12px;margin-bottom:12px;font-weight:500}
 /* controles */
-button,.btn{font:inherit;font-weight:600;min-height:40px;padding:9px 16px;border-radius:12px;border:0;background:var(--pri);color:#fff;cursor:pointer;transition:filter .15s,transform .05s}
-button:hover{filter:brightness(1.08)}button:active{transform:scale(.98)}button:disabled{opacity:.45;cursor:not-allowed}
-button.no{background:var(--no)}button.sec{background:transparent;color:var(--pri);border:1.5px solid var(--pri)}
-.inl button{min-height:0;padding:4px 10px;font-size:.85rem;border-radius:9px}
-input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{font:inherit;padding:10px 12px;border-radius:12px;border:1.5px solid var(--bd);background:var(--card);color:var(--tx);max-width:100%}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-soft)}
-input[type=checkbox]{width:18px;height:18px;accent-color:var(--pri);vertical-align:middle}
+button,.btn{font:inherit;font-weight:600;letter-spacing:.015em;min-height:42px;padding:9px 18px;border-radius:14px;border:0;color:#fff;cursor:pointer;
+background:linear-gradient(135deg,var(--pri),var(--pri2));box-shadow:0 8px 20px -10px var(--pri),inset 0 1px 0 #ffffff30;transition:transform .12s,box-shadow .2s,filter .2s}
+button:hover{transform:translateY(-1px);box-shadow:0 12px 26px -10px var(--pri),0 0 0 3px var(--glow),inset 0 1px 0 #ffffff30}
+button:active{transform:scale(.98)}button:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+button.no{background:linear-gradient(135deg,#d23b3b,#ff5d73);box-shadow:0 8px 20px -10px var(--no),inset 0 1px 0 #ffffff30}
+button.no:hover{box-shadow:0 12px 26px -10px var(--no),0 0 0 3px #d23b3b33,inset 0 1px 0 #ffffff30}
+button.sec{background:transparent;color:var(--pri);border:1.5px solid var(--pri);box-shadow:none}
+button.sec:hover{background:var(--pri-soft);box-shadow:0 0 0 3px var(--glow)}
+.inl button{min-height:0;padding:4px 11px;font-size:.85rem;border-radius:10px;box-shadow:none}
+input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{font:inherit;padding:11px 14px;border-radius:14px;border:1.5px solid var(--bd);background:var(--field);color:var(--tx);max-width:100%;transition:border-color .15s,box-shadow .2s,background .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pri);background:var(--card);box-shadow:0 0 0 4px var(--glow),0 0 22px -6px var(--pri)}
+input::placeholder,textarea::placeholder{color:var(--mut);opacity:.75}
+input[type=file]{font:inherit;font-size:.9rem;color:var(--mut);max-width:100%}
+input[type=file]::file-selector-button{font:inherit;font-weight:600;margin-right:12px;padding:8px 14px;border:0;border-radius:10px;background:var(--pri-soft);color:var(--pri);cursor:pointer}
+input[type=checkbox]{width:19px;height:19px;accent-color:var(--pri);vertical-align:middle}
+select{appearance:none;-webkit-appearance:none;padding-right:38px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%236b6b7b' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+/* formulários alinhados */
+.fm p{display:flex;flex-direction:column;gap:6px;margin:0 0 14px}
+.fm label{font-size:.8rem;font-weight:600;color:var(--mut);letter-spacing:.02em}
+.fm input:not([type=checkbox]):not([type=radio]):not([type=file]),.fm select,.fm textarea{width:100%}
+.fm p:has(input[type=checkbox]){flex-direction:row-reverse;justify-content:flex-end;align-items:center;gap:10px}
+.fm p:has(input[type=checkbox]) label{color:var(--tx);font-size:.92rem;font-weight:500}
+.helptext{display:block;font-size:.78rem;color:var(--mut);font-weight:400}
+.errorlist{list-style:none;margin:0 0 4px;padding:0;color:var(--no);font-size:.82rem}
 /* listas, avatar, abas */
 .linha{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--bd);color:inherit}
 a.linha:hover{text-decoration:none}.quem{display:flex;align-items:center;gap:12px;min-width:0}
@@ -70,19 +88,21 @@ padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px #1d1d280d}
 <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
 <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
 <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></symbol>
+<symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></symbol>
+<symbol id="i-go" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol>
 <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
 </defs></svg>
 {% usuario_eh_lider as lider_menu %}
 {% if user.is_authenticated %}
 <header class="top">
 {% if lider_menu or user.is_staff %}<button class="ico" id="b-menu" aria-label="Abrir menu"><svg class="ic"><use href="#i-menu"/></svg></button>{% endif %}
-<a class="brand" href="{% url 'home' %}">🎸 Bandas</a>
+<a class="brand" href="{% url 'home' %}"><span class="mark"><svg class="ic"><use href="#i-logo"/></svg></span>Exalte</a>
 <a class="ico" href="{% url 'notificacoes' %}" aria-label="Notificações"><svg class="ic"><use href="#i-bell"/></svg></a>
 </header>
 {% if lider_menu or user.is_staff %}
 <div class="fundo" id="fundo"></div>
 <aside class="gaveta" id="gaveta" aria-label="Menu de gerenciamento">
-<div class="cab"><b>🎸 Bandas</b><button class="ico" id="b-fechar" aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+<div class="cab"><b style="display:flex;align-items:center;gap:10px"><span class="mark" style="background:linear-gradient(135deg,var(--pri),var(--pri2));border:0;color:#fff"><svg class="ic"><use href="#i-logo"/></svg></span>Exalte</b><button class="ico" id="b-fechar" aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
 {% if lider_menu %}<h3>Gerenciar</h3>
 <a class="it" href="{% url 'gerenciar' %}">📊 Painel</a>
 <a class="it" href="{% url 'eventos' %}">📅 Eventos</a>
@@ -94,7 +114,7 @@ padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px #1d1d280d}
 {% if user.is_staff %}<h3>Desenvolvedor</h3><a class="it" href="/admin/">🛠️ Admin (dev)</a>{% endif %}
 </aside>{% endif %}
 {% else %}
-<header class="top"><span class="brand">🎸 Bandas</span></header>
+<header class="top"><span class="brand"><span class="mark"><svg class="ic"><use href="#i-logo"/></svg></span>Exalte</span></header>
 {% endif %}
 <main>{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}{% block content %}{% endblock %}</main>
 {% if user.is_authenticated %}
