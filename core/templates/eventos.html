@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% block content %}
-<p><a href="{% url 'gerenciar' %}">← Voltar ao Gerenciar</a></p>
+<a class="voltar" href="{% url 'gerenciar' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar ao Gerenciar</a>
 <style>.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}</style>
-<p><a href="{% url 'evento_novo' %}"><button>+ Novo evento</button></a> <a href="{% url 'importar_eventos' %}"><button>📥 Importar calendário</button></a></p>
+<p><a href="{% url 'evento_novo' %}"><button>+ Novo evento</button></a> <a href="{% url 'importar_eventos' %}"><button>📥 Importar calendário</button></a> <a href="{% url 'gerar_recorrentes' %}"><button>🔁 Gerar recorrentes</button></a></p>
 {% if futuros or passados %}{% url 'evento_excluir_lote' as u %}{% include "_lote_barra.html" with acao=u aviso="Excluir {n} evento(s)? A escala e o setlist deles também serão apagados. Não dá para desfazer." %}{% endif %}
 <div class="card"><h2>📅 Próximos eventos</h2>
 {% for ev in futuros %}{% include "evento_linha.html" %}{% empty %}<p class="mut">Nenhum evento futuro.</p>{% endfor %}</div>

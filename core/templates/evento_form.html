@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block content %}
-<p><a href="{% url 'gerenciar' %}">← Voltar ao Gerenciar</a></p>
+<a class="voltar" href="{% url 'gerenciar' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar ao Gerenciar</a>
 <style>.fm p{margin:0 0 10px}.fm input,.fm select,.fm textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}.inl{display:inline;margin:0}.inl button{padding:2px 8px}.row{display:flex;gap:6px;flex-wrap:wrap}.row>*{flex:1 1 140px}</style>
 <div class="card fm"><h2>{% if ev %}Editar evento{% else %}Novo evento{% endif %}</h2>
 <form method="post">{% csrf_token %}{{ form.as_p }}<button>Salvar</button>

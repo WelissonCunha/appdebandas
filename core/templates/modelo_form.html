@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% block content %}
+<style>.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}
+.rl{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--bd);cursor:pointer}.rl .d{width:84px;flex:none;font-weight:600}.rl .h{color:var(--mut);width:48px;flex:none}
+.fn{border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:12px;background:var(--bg)}
+.fn .topo{display:flex;gap:8px;align-items:flex-end}.fn .topo>div{flex:1}
+.fn label.t{display:block;font-size:.72rem;font-weight:700;color:var(--mut);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1.5px solid var(--bd);border-radius:99px;background:var(--card);cursor:pointer;font-size:.9rem}
+.chip:has(input:checked){border-color:var(--pri);background:var(--pri-soft);color:var(--pri);font-weight:600}</style>
+<a class="voltar" href="{% url 'modelos' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar aos modelos</a>
+<div class="card fm"><h2>✏️ Modelo · {{ modelo.banda.nome }}</h2>
+<form method="post">{% csrf_token %}<input type="hidden" name="n_funcoes" id="n_funcoes" value="{{ atuais|length }}">
+<p><label>Nome do modelo<br><input name="nome" value="{{ modelo.nome }}" required></label></p>
+<p class="mut">Para cada função, marque <b>uma pessoa</b> (fixa) ou <b>várias</b> (rodízio: elas se revezam a cada evento).</p>
+<div id="funcoes">{% for f in atuais %}<div class="fn"><div class="topo"><div><label class="t">Função</label><input name="funcao_{{ f.i }}" value="{{ f.funcao }}" list="sugestoes"></div>
+<button type="button" class="no" style="min-height:44px" onclick="this.closest('.fn').remove()" aria-label="Remover função">✕</button></div>
+<div class="chips">{% for m in membros %}<label class="chip"><input type="checkbox" name="m_{{ f.i }}" value="{{ m.pk }}" {% if m.pk in f.ids %}checked{% endif %}>{{ m.nome }}</label>{% endfor %}</div></div>{% endfor %}</div>
+<p><button type="button" class="sec" id="b-add">➕ Adicionar função</button></p>
+<button>Salvar modelo</button></form></div>
+<datalist id="sugestoes"><option value="Vocal 1"><option value="Vocal 2"><option value="Back"><option value="Violão"><option value="Guitarra"><option value="Baixo"><option value="Bateria"><option value="Teclado"><option value="Sonoplastia"><option value="Projeção"></datalist>
+<template id="modelo-fn"><div class="fn"><div class="topo"><div><label class="t">Função</label><input name="funcao___i__" placeholder="Ex.: Vocal 1" list="sugestoes"></div>
+<button type="button" class="no" style="min-height:44px" onclick="this.closest('.fn').remove()" aria-label="Remover função">✕</button></div>
+<div class="chips">{% for m in membros %}<label class="chip"><input type="checkbox" name="m___i__" value="{{ m.pk }}">{{ m.nome }}</label>{% endfor %}</div></div></template>
+<script>
+let n = {{ atuais|length }};
+function adicionar() {
+  document.getElementById("funcoes").insertAdjacentHTML("beforeend", document.getElementById("modelo-fn").innerHTML.replaceAll("__i__", n));
+  n++; document.getElementById("n_funcoes").value = n;
+}
+document.getElementById("b-add").addEventListener("click", adicionar);
+if (n === 0) { adicionar(); adicionar(); adicionar(); }
+</script>
+{% endblock %}

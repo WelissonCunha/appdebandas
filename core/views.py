@@ -6,9 +6,11 @@ from django.templatetags.static import static
 import unicodedata
 from .leitura import contagens, marcar_lida
 from .mencoes import mencionados
+from .rodizio import distribuir
+from .recorrencia import DIAS_ABREV, DIAS_SEL, FREQS, datas_regra
 from .importacao import parse_texto
 from .notificacoes import notificar, vapid_keys
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from django.db import transaction
 from django.db.models import Count, Exists, Max, OuterRef, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -18,11 +20,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.views import PasswordChangeView
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse, reverse_lazy
-from .forms import (
-    PerfilForm, bandas_do_lider, NotifForm, TrocaForm, SenhaForm, SenhaResetForm, AvisoForm,
-    EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm,
-    IndisponibilidadeForm,
-)
+from .forms import PerfilForm, bandas_do_lider, NotifForm, TrocaForm, SenhaForm, SenhaResetForm, AvisoForm, EscalaForm, EventoForm, BandaForm, MembroForm, MembroNovoForm, MusicaForm, SetlistForm
 from .models import *
 
 LIDER = dict(banda__membros__papel="lider")
@@ -69,8 +67,7 @@ def home(request):
     return render(request, "home.html", dict(
         minhas=minhas, eventos=eventos, avisos=avisos, indisp=indisp, meus_membros=meus_membros,
         anivers=anivers, hoje=hoje, mes_nome=MESES_PT[hoje.month - 1], eh_lider=_eh_lider(request.user),
-        pode_criar_banda=_pode_criar_banda(request.user), trocas_info=_trocas_info(request.user),
-        indisponibilidade_form=IndisponibilidadeForm(user=request.user)))
+        pode_criar_banda=_pode_criar_banda(request.user), trocas_info=_trocas_info(request.user)))
 
 
 @login_required
@@ -103,17 +100,11 @@ def responder(request, pk):
 @login_required
 def indisponibilidade(request):
     if request.method == "POST":
-        form = IndisponibilidadeForm(request.POST, user=request.user)
-        if form.is_valid():
-            membro = get_object_or_404(Membro, user=request.user, banda=form.cleaned_data["banda"])
-            Indisponibilidade.objects.create(
-                membro=membro,
-                data=form.cleaned_data["data"],
-                motivo=form.cleaned_data["motivo"],
-            )
+        membro = Membro.objects.filter(user=request.user).first()
+        if membro and request.POST.get("data"):
+            Indisponibilidade.objects.create(membro=membro, data=request.POST["data"],
+                                             motivo=request.POST.get("motivo", ""))
             messages.success(request, "Indisponibilidade registrada.")
-        else:
-            messages.error(request, "Selecione uma banda e informe uma data válida.")
     return redirect("home")
 
 
@@ -411,6 +402,7 @@ def gerenciar(request):
         musicas=Musica.objects.filter(banda__in=bandas).count(),
         membros=Membro.objects.filter(banda__in=bandas).count(),
         bandas=bandas.count(),
+        modelos=ModeloEscala.objects.filter(banda__in=bandas).count(),
         avisos=Aviso.objects.filter(banda__in=bandas).count(),
         trocas=TrocaEscala.objects.filter(status="aberta", escala__evento__banda__in=bandas,
                                           escala__evento__data_hora__gte=timezone.now()).count(),
@@ -992,3 +984,266 @@ def banda_foto_enviar(request, pk):
     BandaFoto.objects.update_or_create(banda=banda, defaults=dict(dados=dados))
     Banda.objects.filter(pk=banda.pk).update(foto_em=timezone.now())
     return JsonResponse({"ok": True})
+
+
+# ---------- eventos recorrentes ----------
+
+def _ler_regras(post):
+    tipos, freqs = {t for t, _ in Evento.TIPOS}, {f for f, _ in FREQS}
+    try:
+        n = min(int(post.get("n_regras") or 0), 30)
+    except ValueError:
+        n = 0
+    regras = []
+    for i in range(n):
+        titulo = post.get(f"titulo_{i}", "").strip()[:150]
+        try:
+            dia = int(post.get(f"dia_{i}", ""))
+        except ValueError:
+            continue
+        freq = post.get(f"freq_{i}", "todas")
+        if not titulo or not 0 <= dia <= 6 or freq not in freqs:
+            continue
+        hora = post.get(f"hora_{i}") or "19:00"
+        try:
+            h, mi = (int(x) for x in hora.split(":")[:2])
+            assert 0 <= h < 24 and 0 <= mi < 60
+        except (ValueError, AssertionError):
+            hora = "19:00"
+        tipo = post.get(f"tipo_{i}")
+        regras.append(dict(i=i, titulo=titulo, dia=dia, freq=freq, hora=hora, tipo=tipo if tipo in tipos else "culto",
+                           local=post.get(f"local_{i}", "").strip()[:150]))
+    return regras
+
+
+@login_required
+def gerar_recorrentes(request):
+    if not _eh_lider(request.user):
+        return redirect("home")
+    bandas = bandas_do_lider(request.user)
+    hoje = timezone.localdate()
+    ctx = dict(bandas=bandas, tipos=Evento.TIPOS, dias=DIAS_SEL, freqs=FREQS, inicio=hoje.isoformat(),
+               fim=date(hoje.year, 12, 31).isoformat(),
+               lotes=(ImportacaoEventos.objects.filter(banda__in=bandas).select_related("banda")
+                      .annotate(n=Count("eventos")).order_by("-criado")[:10]))
+    if request.method != "POST":
+        return render(request, "recorrentes.html", ctx)
+
+    bid = request.POST.get("banda", "")
+    banda = bandas.filter(pk=int(bid) if bid.isdigit() else 0).first()
+    try:
+        inicio, fim = date.fromisoformat(request.POST.get("inicio", "")), date.fromisoformat(request.POST.get("fim", ""))
+    except ValueError:
+        inicio = fim = None
+    regras = _ler_regras(request.POST)
+    if not banda or not inicio or fim < inicio or (fim - inicio).days > 1100:
+        messages.error(request, "Escolha a banda e um período válido (máximo de 3 anos).")
+        return render(request, "recorrentes.html", ctx)
+    if not regras:
+        messages.error(request, "Preencha pelo menos uma regra, com título, dia da semana e frequência.")
+        return render(request, "recorrentes.html", ctx)
+    ocorr = [(r, d) for r in regras for d in datas_regra(inicio, fim, r["dia"], r["freq"])]
+    if not ocorr:
+        messages.error(request, "Nenhuma data cai nesse período com essas regras.")
+        return render(request, "recorrentes.html", ctx)
+    if len(ocorr) > 700:
+        messages.error(request, f"Isso geraria {len(ocorr)} eventos (máximo 700). Reduza o período ou as regras.")
+        return render(request, "recorrentes.html", ctx)
+    existentes = {(e.titulo.lower(), timezone.localtime(e.data_hora).date())
+                  for e in Evento.objects.filter(banda=banda, data_hora__date__range=(inicio, fim))}
+
+    if request.POST.get("acao") == "confirmar":
+        escolhidas, novos, ignorados = set(request.POST.getlist("sel")), [], 0
+        for r, d in ocorr:
+            if f"{r['i']}|{d.isoformat()}" not in escolhidas:
+                continue
+            if (r["titulo"].lower(), d) in existentes:
+                ignorados += 1
+                continue
+            h, mi = (int(x) for x in r["hora"].split(":")[:2])
+            novos.append(Evento(banda=banda, titulo=r["titulo"], tipo=r["tipo"], local=r["local"],
+                                data_hora=timezone.make_aware(datetime(d.year, d.month, d.day, h, mi))))
+        if not novos:
+            messages.error(request, "Nenhum evento foi criado. Marque pelo menos uma data nova.")
+            return redirect("gerar_recorrentes")
+        with transaction.atomic():
+            lote = ImportacaoEventos.objects.create(banda=banda, autor=request.user)
+            for e in novos:
+                e.importacao = lote
+            Evento.objects.bulk_create(novos)
+        messages.success(request, f"{len(novos)} evento(s) criado(s)!" + (f" {ignorados} já existia(m)." if ignorados else ""))
+        return redirect("eventos")
+
+    grupos, atual = [], None
+    for r, d in sorted(ocorr, key=lambda x: (x[1], x[0]["hora"], x[0]["titulo"])):
+        if atual is None or atual[0] != (d.year, d.month):
+            atual = ((d.year, d.month), f"{MESES_PT[d.month - 1]} {d.year}", [])
+            grupos.append(atual)
+        atual[2].append(dict(valor=f"{r['i']}|{d.isoformat()}", dia=DIAS_ABREV[d.weekday()], data=d, hora=r["hora"],
+                             titulo=r["titulo"], dup=(r["titulo"].lower(), d) in existentes))
+    return render(request, "recorrentes.html", dict(
+        ctx, banda=banda, inicio=inicio.isoformat(), fim=fim.isoformat(), regras=regras, total=len(ocorr),
+        n_regras=max(r["i"] for r in regras) + 1, novos=sum(1 for g in grupos for x in g[2] if not x["dup"]),
+        grupos=[(nome, rows) for _, nome, rows in grupos]))
+
+
+# ---------- modelos de escala com rodízio ----------
+
+def _modelo_lider(request, pk):
+    return get_object_or_404(ModeloEscala, pk=pk, banda__membros__user=request.user, banda__membros__papel="lider")
+
+
+def _nome(m):
+    return m.user.get_full_name() or m.user.username
+
+
+@login_required
+def modelos(request):
+    if not _eh_lider(request.user):
+        return redirect("home")
+    bandas = bandas_do_lider(request.user)
+    lista = (ModeloEscala.objects.filter(banda__in=bandas).select_related("banda")
+             .prefetch_related("funcoes__membros__user"))
+    lotes = (LoteEscala.objects.filter(banda__in=bandas).select_related("banda")
+             .annotate(n=Count("escalas")).order_by("-criado")[:10])
+    return render(request, "modelos.html", dict(bandas=bandas, lista=lista, lotes=lotes))
+
+
+@login_required
+@require_POST
+def modelo_novo(request):
+    bid = request.POST.get("banda", "")
+    banda = bandas_do_lider(request.user).filter(pk=int(bid) if bid.isdigit() else 0).first()
+    nome = request.POST.get("nome", "").strip()[:100]
+    if not banda or not nome:
+        messages.error(request, "Informe o nome do modelo e a banda.")
+        return redirect("modelos")
+    return redirect("modelo_editar", pk=ModeloEscala.objects.create(banda=banda, nome=nome).pk)
+
+
+@login_required
+def modelo_editar(request, pk):
+    modelo = _modelo_lider(request, pk)
+    membros = list(Membro.objects.filter(banda=modelo.banda).select_related("user")
+                   .order_by("user__first_name", "user__username"))
+    validos = {m.pk for m in membros}
+    if request.method == "POST":
+        try:
+            n = min(int(request.POST.get("n_funcoes") or 0), 30)
+        except ValueError:
+            n = 0
+        novas = []
+        for i in range(n):
+            fn = request.POST.get(f"funcao_{i}", "").strip()[:60]
+            if fn:
+                novas.append((fn, [int(x) for x in request.POST.getlist(f"m_{i}") if x.isdigit() and int(x) in validos]))
+        with transaction.atomic():
+            modelo.nome = request.POST.get("nome", "").strip()[:100] or modelo.nome
+            modelo.save()
+            modelo.funcoes.all().delete()
+            for ordem, (fn, ids) in enumerate(novas):
+                ModeloFuncao.objects.create(modelo=modelo, funcao=fn, ordem=ordem).membros.set(ids)
+        messages.success(request, "Modelo salvo!")
+        return redirect("modelos")
+    atuais = [dict(i=i, funcao=f.funcao, ids=[m.pk for m in f.membros.all()])
+              for i, f in enumerate(modelo.funcoes.prefetch_related("membros"))]
+    return render(request, "modelo_form.html", dict(
+        modelo=modelo, membros=[dict(pk=m.pk, nome=_nome(m)) for m in membros], atuais=atuais))
+
+
+@login_required
+@require_POST
+def modelo_excluir(request, pk):
+    _modelo_lider(request, pk).delete()
+    messages.success(request, "Modelo excluído. As escalas já criadas por ele continuam.")
+    return redirect("modelos")
+
+
+def _plano(modelo, ev_ids):
+    """Calcula o rodízio para os eventos escolhidos. Eventos que já têm escala ficam de fora."""
+    eventos = list(Evento.objects.filter(pk__in=ev_ids, banda=modelo.banda, data_hora__gte=timezone.now())
+                   .annotate(n=Count("escalas")).order_by("data_hora"))
+    ignorados = sum(1 for e in eventos if e.n)
+    eventos = [e for e in eventos if not e.n]
+    funcoes = []
+    for f in modelo.funcoes.prefetch_related("membros__user"):
+        pool = sorted(f.membros.all(), key=lambda m: ((m.user.first_name or "").lower(), m.user.username))
+        funcoes.append((f.funcao, [m.pk for m in pool]))
+    dias = {e.pk: timezone.localtime(e.data_hora).date() for e in eventos}
+    indisp = set(Indisponibilidade.objects.filter(membro__banda=modelo.banda, data__in=set(dias.values()))
+                 .values_list("membro_id", "data"))
+    return eventos, distribuir([(e.pk, dias[e.pk]) for e in eventos], funcoes, indisp), ignorados
+
+
+@login_required
+def modelo_aplicar(request, pk):
+    modelo = _modelo_lider(request, pk)
+    if request.method != "POST":
+        futuros = (Evento.objects.filter(banda=modelo.banda, data_hora__gte=timezone.now())
+                   .annotate(n=Count("escalas")).order_by("data_hora")[:300])
+        return render(request, "modelo_aplicar.html", dict(modelo=modelo, eventos=futuros))
+    ids = [int(x) for x in request.POST.getlist("ev") if x.isdigit()]
+    eventos, plano, ignorados = _plano(modelo, ids) if ids else ([], {}, 0)
+    if not eventos:
+        messages.error(request, "Nenhum evento disponível: marque eventos futuros que ainda não tenham escala.")
+        return redirect("modelo_aplicar", pk=pk)
+    if not any(mid for linhas in plano.values() for _, mid, _ in linhas):
+        messages.error(request, "O modelo não tem ninguém marcado nas funções. Edite o modelo primeiro.")
+        return redirect("modelo_editar", pk=pk)
+    membros = {m.pk: m for m in Membro.objects.filter(banda=modelo.banda).select_related("user")}
+
+    if request.POST.get("acao") == "confirmar":
+        incl = {int(x) for x in request.POST.getlist("incl") if x.isdigit()}
+        novos, por_pessoa = [], {}
+        for e in eventos:
+            if e.pk not in incl:
+                continue
+            for funcao, mid, _ in plano[e.pk]:
+                if mid:
+                    novos.append(Escala(evento=e, membro=membros[mid], funcao=funcao))
+                    por_pessoa.setdefault(mid, []).append((e, funcao))
+        if not novos:
+            messages.error(request, "Nada a criar: marque pelo menos um evento com alguém escalado.")
+            return redirect("modelo_aplicar", pk=pk)
+        with transaction.atomic():
+            lote = LoteEscala.objects.create(banda=modelo.banda, autor=request.user, nome=modelo.nome)
+            for esc in novos:
+                esc.lote = lote
+            Escala.objects.bulk_create(novos)
+        for mid, itens in por_pessoa.items():
+            u = membros[mid].user
+            if len(itens) == 1:
+                e, funcao = itens[0]
+                notificar([u], "Você foi escalado!", f"{funcao} em {e.titulo} — {_fmt(e.data_hora)}",
+                          f"/evento/{e.pk}/", exceto=request.user)
+            else:
+                notificar([u], f"Você foi escalado em {len(itens)} eventos",
+                          f"De {_fmt(itens[0][0].data_hora)} a {_fmt(itens[-1][0].data_hora)}. Veja em Minhas escalas.",
+                          "/minhas-escalas/", exceto=request.user)
+        messages.success(request, f"{len(novos)} escala(s) criada(s) em {len(incl & {e.pk for e in eventos})} evento(s)!")
+        return redirect("modelos")
+
+    carga, linhas, vagas = {}, [], 0
+    for e in eventos:
+        itens = []
+        for funcao, mid, motivo in plano[e.pk]:
+            itens.append((funcao, _nome(membros[mid]) if mid else None, motivo))
+            if mid:
+                carga[mid] = carga.get(mid, 0) + 1
+            else:
+                vagas += 1
+        linhas.append(dict(ev=e, itens=itens))
+    resumo = sorted(((_nome(membros[mid]), n) for mid, n in carga.items()), key=lambda x: (-x[1], x[0]))
+    return render(request, "modelo_aplicar.html", dict(modelo=modelo, linhas=linhas, resumo=resumo, vagas=vagas,
+                                                       ignorados=ignorados, ids=[e.pk for e in eventos]))
+
+
+@login_required
+@require_POST
+def lote_escala_desfazer(request, pk):
+    lote = get_object_or_404(LoteEscala, pk=pk, banda__membros__user=request.user, banda__membros__papel="lider")
+    n = lote.escalas.count()
+    lote.escalas.all().delete()
+    lote.delete()
+    messages.success(request, f"Lote desfeito: {n} escala(s) removida(s).")
+    return redirect("modelos")

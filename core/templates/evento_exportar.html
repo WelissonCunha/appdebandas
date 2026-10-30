@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block content %}
-<p><a href="{% url 'evento' ev.pk %}">← Voltar ao evento</a></p>
+<a class="voltar" href="{% url 'evento' ev.pk %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar ao evento</a>
 <div class="card"><h2>📤 Exportar escala</h2>
 <button id="b-png" disabled>🖼️ Baixar imagem (PNG)</button> <button id="b-pdf" disabled>📄 Baixar PDF</button>
 <p class="mut" id="status">Preparando o arquivo... (precisa de internet na primeira vez)</p></div>

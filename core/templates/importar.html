@@ -2,7 +2,7 @@
 <style>.fm p{margin:0 0 10px}.fm input,.fm select,.fm textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}
 .lin{border-top:1px solid #8883;padding:10px 0}.lin .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin-top:6px}
 .lin input[type=checkbox]{width:auto}.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}</style>
-<p><a href="{% url 'eventos' %}">← Voltar aos eventos</a></p>
+<a class="voltar" href="{% url 'eventos' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar aos eventos</a>
 {% if linhas %}
 <div class="card fm"><h2>👀 Confira antes de importar</h2>
 <p class="mut">Banda: <b>{{ banda.nome }}</b>. Corrija o que precisar e desmarque o que não quer importar. Itens com ⚠️ já existem ou têm problema e vêm desmarcados. Mostrando {{ mostradas }} de {{ lidas }} linha(s) lidas.</p>
@@ -33,7 +33,7 @@
 <button>🔍 Pré-visualizar</button></form>
 <p class="mut" style="margin-top:12px"><b>Dicas:</b> funciona com datas como 25/12, 25/12/2026, 25 de dezembro ou 2026-12-25, horas como 19h, 19h30 ou 19:30, e <b>@ local</b> no fim da linha.
 Títulos de mês (ex.: "Janeiro") valem para as linhas seguintes, que podem começar só com o dia. "Ensaio", "culto" e "show" no título definem o tipo sozinhos.</p></div>
-{% if importacoes %}<div class="card"><h2>↩️ Importações recentes</h2>
+{% if importacoes %}<div class="card"><h2>↩️ Lotes recentes (importação e recorrentes)</h2>
 {% for i in importacoes %}<p>{{ i.criado|date:"d/m/Y H:i" }} · {{ i.banda }} · {{ i.n }} evento(s)
 <form class="inl" method="post" action="{% url 'importacao_desfazer' i.pk %}" onsubmit="return confirm('Desfazer? Os {{ i.n }} eventos desta importação serão apagados, junto com escalas e setlists deles.')">{% csrf_token %}<button class="no">Desfazer</button></form></p>{% endfor %}</div>{% endif %}
 {% endif %}

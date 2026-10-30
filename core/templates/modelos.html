@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% block content %}
+<style>.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}
+.rl{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--bd);cursor:pointer}.rl .d{width:84px;flex:none;font-weight:600}.rl .h{color:var(--mut);width:48px;flex:none}
+.fn{border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:12px;background:var(--bg)}
+.fn .topo{display:flex;gap:8px;align-items:flex-end}.fn .topo>div{flex:1}
+.fn label.t{display:block;font-size:.72rem;font-weight:700;color:var(--mut);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1.5px solid var(--bd);border-radius:99px;background:var(--card);cursor:pointer;font-size:.9rem}
+.chip:has(input:checked){border-color:var(--pri);background:var(--pri-soft);color:var(--pri);font-weight:600}</style>
+<a class="voltar" href="{% url 'gerenciar' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar ao Gerenciar</a>
+<div class="card fm"><h2>🎛️ Novo modelo de escala</h2>
+<p class="mut">Um modelo guarda as funções e as pessoas de um tipo de evento (ex.: "Culto de domingo"). Depois você aplica a vários eventos de uma vez, com rodízio.</p>
+<form method="post" action="{% url 'modelo_novo' %}">{% csrf_token %}
+<p><label>Nome<br><input name="nome" placeholder="Ex.: Culto de domingo" required></label></p>
+<p><label>Banda<br><select name="banda">{% for b in bandas %}<option value="{{ b.pk }}">{{ b.nome }}</option>{% endfor %}</select></label></p>
+<button>Criar e montar funções</button></form></div>
+{% for m in lista %}<div class="card"><h2>{{ m.nome }} <span class="mut">· {{ m.banda.nome }}</span></h2>
+{% for f in m.funcoes.all %}<p><b>{{ f.funcao }}:</b> {% for x in f.membros.all %}{{ x.user.get_full_name|default:x.user.username }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="mut">ninguém</span>{% endfor %}
+{% if f.membros.all|length > 1 %}<span class="tag">rodízio</span>{% endif %}</p>
+{% empty %}<p class="mut">Ainda sem funções. Clique em Editar para montar.</p>{% endfor %}
+<p><a href="{% url 'modelo_aplicar' m.pk %}"><button>▶ Aplicar a eventos</button></a>
+<a href="{% url 'modelo_editar' m.pk %}"><button class="sec">✏️ Editar</button></a>
+<form class="inl" method="post" action="{% url 'modelo_excluir' m.pk %}" onsubmit="return confirm('Excluir o modelo {{ m.nome|escapejs }}? As escalas já criadas por ele continuam.')">{% csrf_token %}<button class="no">🗑️ Excluir</button></form></p></div>
+{% empty %}<p class="mut">Nenhum modelo ainda.</p>{% endfor %}
+{% if lotes %}<div class="card"><h2>↩️ Aplicações recentes</h2>
+{% for l in lotes %}<p>{{ l.criado|date:"d/m/Y H:i" }} · {{ l.nome }} · {{ l.n }} escala(s)
+<form class="inl" method="post" action="{% url 'lote_escala_desfazer' l.pk %}" onsubmit="return confirm('Desfazer? As {{ l.n }} escalas desta aplicação serão apagadas, mesmo as já confirmadas.')">{% csrf_token %}<button class="no">Desfazer</button></form></p>{% endfor %}</div>{% endif %}
+{% endblock %}

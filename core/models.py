@@ -71,6 +71,7 @@ class Escala(models.Model):
     funcao = models.CharField(max_length=60, help_text="Ex.: Bateria, Vocal 1")
     status = models.CharField(max_length=12, choices=STATUS, default="pendente")
     obs = models.CharField(max_length=200, blank=True, help_text="Motivo / pedido de troca")
+    lote = models.ForeignKey("LoteEscala", null=True, blank=True, on_delete=models.SET_NULL, related_name="escalas")
 
     def __str__(self):
         return f"{self.membro} - {self.funcao}"
@@ -185,3 +186,34 @@ class LeituraMensagens(models.Model):
 
     class Meta:
         unique_together = ("user", "banda")
+
+
+class ModeloEscala(models.Model):
+    banda = models.ForeignKey(Banda, on_delete=models.CASCADE, related_name="modelos_escala")
+    nome = models.CharField(max_length=100)
+    criado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["nome"]
+
+    def __str__(self):
+        return self.nome
+
+
+class ModeloFuncao(models.Model):
+    """Uma função do modelo. Uma pessoa marcada = fixa; várias = rodízio."""
+    modelo = models.ForeignKey(ModeloEscala, on_delete=models.CASCADE, related_name="funcoes")
+    funcao = models.CharField(max_length=60)
+    ordem = models.PositiveIntegerField(default=0)
+    membros = models.ManyToManyField(Membro, blank=True, related_name="+")
+
+    class Meta:
+        ordering = ["ordem"]
+
+
+class LoteEscala(models.Model):
+    """Escalas criadas de uma vez por um modelo, para poder desfazer."""
+    banda = models.ForeignKey(Banda, on_delete=models.CASCADE, related_name="lotes_escala")
+    autor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    nome = models.CharField(max_length=100)
+    criado = models.DateTimeField(auto_now_add=True)

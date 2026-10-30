@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% block content %}
 <style>.fm p{margin:0 0 10px}.fm input,.fm select{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}</style>
-<p><a href="{% url 'home' %}">← Voltar</a></p>
+<a class="voltar" href="{% url 'home' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar</a>
 <div class="card fm"><h2>🔄 Pedir troca</h2>
 <p><b>{{ esc.funcao }}</b> em <b>{{ esc.evento.titulo }}</b> · {{ esc.evento.data_hora|date:"d/m/Y H:i" }}</p>
 <p class="mut">Deixe "Qualquer membro da banda" para abrir o pedido a todos. O líder é avisado quando alguém aceitar.</p>

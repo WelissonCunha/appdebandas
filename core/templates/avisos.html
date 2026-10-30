@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block content %}
-<p><a href="{% url 'gerenciar' %}">← Voltar ao Gerenciar</a></p>
+<a class="voltar" href="{% url 'gerenciar' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar ao Gerenciar</a>
 <style>.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}</style>
 <p><a href="{% url 'aviso_novo' %}"><button>+ Novo aviso</button></a></p>
 {% for a in avisos %}<div class="card">

@@ -63,6 +63,11 @@ select{appearance:none;-webkit-appearance:none;padding-right:38px;background-ima
 .fm p:has(input[type=checkbox]) label{color:var(--tx);font-size:.92rem;font-weight:500}
 .helptext{display:block;font-size:.78rem;color:var(--mut);font-weight:400}
 .errorlist{list-style:none;margin:0 0 4px;padding:0;color:var(--no);font-size:.82rem}
+/* botão voltar */
+a.voltar{display:inline-flex;align-items:center;gap:8px;padding:6px 16px 6px 6px;margin:0 0 14px;border-radius:99px;background:var(--card);border:1px solid var(--bd);box-shadow:var(--sh);color:var(--tx);font-weight:600;font-size:.88rem;transition:transform .12s,box-shadow .2s}
+a.voltar:hover{text-decoration:none;transform:translateX(-2px);box-shadow:0 8px 20px -10px var(--pri),0 0 0 3px var(--glow)}
+a.voltar .seta{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--pri),var(--pri2))}
+a.voltar .seta svg{width:16px;height:16px;stroke-width:2.6}
 /* listas, avatar, abas */
 .linha{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--bd);color:inherit}
 a.linha:hover{text-decoration:none}.quem{display:flex;align-items:center;gap:12px;min-width:0}
@@ -91,6 +96,7 @@ padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px #1d1d280d}
 <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></symbol>
 <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></symbol>
 <symbol id="i-go" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></symbol>
 <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
 </defs></svg>
 {% usuario_eh_lider as lider_menu %}{% nao_lidas as n_msg %}
@@ -111,7 +117,9 @@ padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -4px 16px #1d1d280d}
 <a class="it" href="{% url 'bandas' %}">🎸 Bandas</a>
 <a class="it" href="{% url 'membros' %}">👥 Gerenciar membros</a>
 <a class="it" href="{% url 'avisos' %}">📢 Avisos</a>
-<a class="it" href="{% url 'importar_eventos' %}">📥 Importar calendário</a>{% endif %}
+<a class="it" href="{% url 'importar_eventos' %}">📥 Importar calendário</a>
+<a class="it" href="{% url 'gerar_recorrentes' %}">🔁 Eventos recorrentes</a>
+<a class="it" href="{% url 'modelos' %}">🎛️ Modelos de escala</a>{% endif %}
 {% if user.is_staff %}<h3>Desenvolvedor</h3><a class="it" href="/admin/">🛠️ Admin (dev)</a>{% endif %}
 </aside>{% endif %}
 {% else %}

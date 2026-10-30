@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% load menu %}{% block content %}
-<p><a href="{% url 'perfil' %}">← Perfil</a></p>
+<a class="voltar" href="{% url 'perfil' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Perfil</a>
 {% if bandas|length > 1 %}<div class="seg">{% for b in bandas %}<a class="{% if b.pk == banda.pk %}on{% endif %}" href="?banda={{ b.pk }}">{{ b.nome }}</a>{% endfor %}</div>{% endif %}
 {% if banda %}<div class="card"><h2>👥 Membros · {{ banda.nome }}</h2>
 {% for m in membros %}<div class="linha"><div class="quem">{% avatar m.user_id m.user.get_full_name|default:m.user.username m.user.perfil.foto_em 44 %}

@@ -1,6 +1,6 @@
 {% extends "base.html" %}{% block content %}
 <style>.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}</style>
-<p><a href="{% url 'gerenciar' %}">← Voltar ao Gerenciar</a></p>
+<a class="voltar" href="{% url 'gerenciar' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar ao Gerenciar</a>
 <p><a href="{% url 'banda_nova' %}"><button>+ Nova banda</button></a></p>
 {% for b in bandas %}<div class="card"><h2>🎸 {{ b.nome }}</h2>
 {% if b.descricao %}<p class="mut">{{ b.descricao }}</p>{% endif %}

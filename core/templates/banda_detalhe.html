@@ -2,7 +2,7 @@
 <style>.ph{text-align:center}.ph label{position:relative;display:inline-block}.ph label.edit{cursor:pointer}
 .cam{position:absolute;right:-4px;bottom:-4px;background:var(--pri);color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:15px;border:3px solid var(--card)}
 .ph h1{margin:.1em 0 .5em}.ph .inl{display:inline;margin:0}</style>
-<p><a href="{% url 'home' %}">← Início</a></p>
+<a class="voltar" href="{% url 'home' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Início</a>
 <div class="card ph"><h1>{{ banda.nome }}</h1>
 <label {% if lider %}for="foto-input" class="edit"{% endif %}>{% avatar_banda banda.pk banda.nome banda.foto_em 112 %}{% if lider %}<span class="cam">📷</span>{% endif %}</label>
 {% if lider %}<input type="file" id="foto-input" accept="image/*" hidden>{% endif %}

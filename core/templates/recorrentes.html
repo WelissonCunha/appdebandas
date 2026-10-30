@@ -1,0 +1,58 @@
+{% extends "base.html" %}{% block content %}
+<style>.fm p{margin:0 0 12px}.fm input:not([type=checkbox]),.fm select{width:100%}
+.regra{border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:12px;background:var(--bg)}
+.regra .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px}
+.regra label{display:block;font-size:.72rem;font-weight:700;color:var(--mut);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.regra .topo{display:flex;gap:8px;align-items:flex-end}.regra .topo div{flex:1}
+.mes{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--pri);margin:16px 0 4px}
+.rl{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--bd);cursor:pointer}
+.rl .d{width:84px;flex:none;font-weight:600}.rl .h{color:var(--mut);width:48px;flex:none}.inl{display:inline;margin:0 0 0 8px}.inl button{padding:2px 8px}</style>
+<a class="voltar" href="{% url 'eventos' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar aos eventos</a>
+{% if grupos %}
+<div class="card"><h2>👀 Confira as datas</h2>
+<p class="mut"><b>{{ banda.nome }}</b> · {{ total }} data(s) geradas, {{ novos }} nova(s). Desmarque as que não quer criar (feriados, por exemplo). Datas que já existem vêm desmarcadas.</p>
+<p><button type="button" class="sec" onclick="document.querySelectorAll('.rl input[type=checkbox]').forEach(c=>c.checked=true)">Marcar todos</button>
+<button type="button" class="sec" onclick="document.querySelectorAll('.rl input[type=checkbox]').forEach(c=>c.checked=false)">Desmarcar todos</button></p>
+<form method="post">{% csrf_token %}<input type="hidden" name="acao" value="confirmar"><input type="hidden" name="banda" value="{{ banda.pk }}">
+<input type="hidden" name="inicio" value="{{ inicio }}"><input type="hidden" name="fim" value="{{ fim }}"><input type="hidden" name="n_regras" value="{{ n_regras }}">
+{% for r in regras %}<input type="hidden" name="titulo_{{ r.i }}" value="{{ r.titulo }}"><input type="hidden" name="dia_{{ r.i }}" value="{{ r.dia }}">
+<input type="hidden" name="freq_{{ r.i }}" value="{{ r.freq }}"><input type="hidden" name="hora_{{ r.i }}" value="{{ r.hora }}">
+<input type="hidden" name="tipo_{{ r.i }}" value="{{ r.tipo }}"><input type="hidden" name="local_{{ r.i }}" value="{{ r.local }}">{% endfor %}
+{% for nome, rows in grupos %}<div class="mes">{{ nome }}</div>
+{% for x in rows %}<label class="rl"><input type="checkbox" name="sel" value="{{ x.valor }}" {% if not x.dup %}checked{% endif %}>
+<span class="d">{{ x.dia }} {{ x.data|date:"d/m" }}</span><span class="h">{{ x.hora }}</span><span>{{ x.titulo }}</span>{% if x.dup %}<span class="tag">⚠️ Já existe</span>{% endif %}</label>{% endfor %}{% endfor %}
+<p style="margin-top:14px"><button>✅ Criar eventos selecionados</button> <a href="{% url 'gerar_recorrentes' %}">Cancelar</a></p></form></div>
+{% else %}
+<div class="card fm"><h2>🔁 Gerar eventos recorrentes</h2>
+<p class="mut">Descreva o que se repete (por exemplo, "culto toda quinta às 19h30") e o período. O app mostra todas as datas antes de criar.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="acao" value="previa"><input type="hidden" name="n_regras" id="n_regras" value="0">
+<p><label>Banda<br><select name="banda">{% for b in bandas %}<option value="{{ b.pk }}">{{ b.nome }}</option>{% endfor %}</select></label></p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
+<p><label>De<br><input type="date" name="inicio" value="{{ inicio }}" required></label></p>
+<p><label>Até<br><input type="date" name="fim" value="{{ fim }}" required></label></p></div>
+<div id="regras"></div>
+<p><button type="button" class="sec" id="b-add">➕ Adicionar regra</button></p>
+<button>🔍 Ver as datas</button></form></div>
+<template id="modelo"><div class="regra">
+<div class="topo"><div><label>Título</label><input name="titulo___i__" placeholder="Ex.: Culto da Vitória"></div>
+<button type="button" class="no" style="min-height:44px" onclick="this.closest('.regra').remove()" aria-label="Remover regra">✕</button></div>
+<div class="g"><div><label>Dia</label><select name="dia___i__">{% for v, n in dias %}<option value="{{ v }}">{{ n }}</option>{% endfor %}</select></div>
+<div><label>Frequência</label><select name="freq___i__">{% for v, n in freqs %}<option value="{{ v }}">{{ n }}</option>{% endfor %}</select></div>
+<div><label>Horário</label><input type="time" name="hora___i__" value="19:00"></div>
+<div><label>Tipo</label><select name="tipo___i__">{% for v, n in tipos %}<option value="{{ v }}">{{ n }}</option>{% endfor %}</select></div>
+<div><label>Local (opcional)</label><input name="local___i__"></div></div></div></template>
+{% if lotes %}<div class="card"><h2>↩️ Lotes recentes</h2>
+{% for l in lotes %}<p>{{ l.criado|date:"d/m/Y H:i" }} · {{ l.banda }} · {{ l.n }} evento(s)
+<form class="inl" method="post" action="{% url 'importacao_desfazer' l.pk %}" onsubmit="return confirm('Desfazer? Os {{ l.n }} eventos deste lote serão apagados, junto com escalas e setlists deles.')">{% csrf_token %}<button class="no">Desfazer</button></form></p>{% endfor %}</div>{% endif %}
+<script>
+let n = 0;
+const alvo = document.getElementById("regras");
+function adicionar() {
+  alvo.insertAdjacentHTML("beforeend", document.getElementById("modelo").innerHTML.replaceAll("__i__", n));
+  n++; document.getElementById("n_regras").value = n;
+}
+document.getElementById("b-add").addEventListener("click", adicionar);
+adicionar(); adicionar(); adicionar();
+</script>
+{% endif %}
+{% endblock %}

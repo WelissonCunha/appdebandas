@@ -10,19 +10,6 @@ def bandas_do_lider(user):
     return Banda.objects.filter(membros__user=user, membros__papel="lider")
 
 
-class IndisponibilidadeForm(forms.Form):
-    banda = forms.ModelChoiceField(queryset=Banda.objects.none(), label="Banda")
-    data = forms.DateField(
-        label="Data",
-        widget=forms.DateInput(attrs={"type": "date"}),
-    )
-    motivo = forms.CharField(max_length=150, required=False, label="Motivo (opcional)")
-
-    def __init__(self, *args, user, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["banda"].queryset = Banda.objects.filter(membros__user=user).distinct()
-
-
 class EventoForm(forms.ModelForm):
     class Meta:
         model = Evento

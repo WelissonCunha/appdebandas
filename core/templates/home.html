@@ -30,6 +30,6 @@
 
 <div class="card"><h2>🚫 Não posso nesta data</h2>
 <form method="post" action="{% url 'indisponibilidade' %}">{% csrf_token %}
-<div class="fm">{{ indisponibilidade_form.as_p }}</div><button>Salvar</button></form>
+<input type="date" name="data" required> <input name="motivo" placeholder="Motivo (opcional)"> <button>Salvar</button></form>
 {% for i in indisp %}<p class="mut">{{ i.data|date:"d/m/Y" }} {{ i.motivo }}</p>{% endfor %}</div>
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block content %}
-<p><a href="{% url 'gerenciar' %}">← Voltar ao Gerenciar</a></p>
+<a class="voltar" href="{% url 'gerenciar' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar ao Gerenciar</a>
 <style>.fm p{margin:0 0 10px}.fm input,.fm select,.fm textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #8884;font:inherit}</style>
 <div class="card fm"><h2>{% if mus %}Editar música{% else %}Nova música{% endif %}</h2>
 <form method="post">{% csrf_token %}{{ form.as_p }}<button>Salvar</button> <a href="{% url 'repertorio' %}">Cancelar</a></form>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block content %}
-<p><a href="{% url 'gerenciar' %}">← Voltar ao Gerenciar</a></p>
+<a class="voltar" href="{% url 'gerenciar' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar ao Gerenciar</a>
 <p><a href="{% url 'membro_novo' %}"><button>+ Adicionar membro</button></a></p>
 {% if bandas %}{% url 'membro_excluir_lote' as u %}{% include "_lote_barra.html" with acao=u aviso="Remover {n} membro(s) da banda? Eles também saem das escalas dos eventos." %}{% endif %}
 {% for b in bandas %}<div class="card"><h2>👥 {{ b.nome }}</h2>
