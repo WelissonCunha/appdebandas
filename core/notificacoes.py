@@ -25,10 +25,23 @@ def _conexao_email():
     host = os.environ.get("EMAIL_HOST")
     if not host:  # sem configuração: imprime o e-mail no terminal (modo de teste)
         return get_connection("django.core.mail.backends.console.EmailBackend")
-    return get_connection("django.core.mail.backends.smtp.EmailBackend", host=host,
-                          port=int(os.environ.get("EMAIL_PORT", "587")),
-                          username=os.environ.get("EMAIL_USER"), password=os.environ.get("EMAIL_PASSWORD"),
-                          use_tls=os.environ.get("EMAIL_TLS", "1") == "1", timeout=15)
+    usar_ssl = os.environ.get("EMAIL_SSL", "0") == "1"  # porta 465, conexão já criptografada
+    senha = "".join((os.environ.get("EMAIL_PASSWORD") or "").split())  # tira espaços, inclusive o "espaço duro" do Google
+    return get_connection("django.core.mail.backends.smtp.EmailBackend", host=host.strip(),
+                          port=int(os.environ.get("EMAIL_PORT", "465" if usar_ssl else "587")),
+                          username=(os.environ.get("EMAIL_USER") or "").strip(), password=senha,
+                          use_tls=(not usar_ssl) and os.environ.get("EMAIL_TLS", "1") == "1", use_ssl=usar_ssl,
+                          timeout=20)
+
+
+def _dica_email(erro):
+    import smtplib
+    if isinstance(erro, smtplib.SMTPAuthenticationError):
+        return "O servidor recusou o login: confira EMAIL_USER e use a SENHA DE APP (16 letras), não a senha normal."
+    if isinstance(erro, smtplib.SMTPServerDisconnected):
+        return ("O servidor fechou a conexão no login. Rode 'python testar_email.py' para diagnosticar; "
+                "causas comuns: antivírus com verificação de e-mail, rede bloqueando a porta, ou tente EMAIL_SSL=1 e EMAIL_PORT=465.")
+    return None
 
 
 def vapid_keys():
@@ -74,8 +87,10 @@ def _enviar(envios, titulo, texto, url):
             try:
                 conn = _conexao_email()
                 conn.send_messages(msgs)
-            except Exception:
+            except Exception as erro:
                 log.exception("Falha ao enviar e-mails")
+                if _dica_email(erro):
+                    log.error(_dica_email(erro))
         try:
             from pywebpush import WebPushException, webpush
             _, priv = vapid_keys()

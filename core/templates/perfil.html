@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% load menu %}{% block content %}
 <style>.ph{text-align:center}.ph label{position:relative;display:inline-block;cursor:pointer}
 .cam{position:absolute;right:-4px;bottom:-4px;background:var(--pri);color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:15px;border:3px solid var(--card)}
-.ph h1{margin:.5em 0 .1em}.fm p{margin:0 0 10px}.fm input{width:100%}.lk{width:100%;text-align:left;background:none;color:var(--tx);border:0;border-top:1px solid var(--bd);border-radius:0;padding:14px 0;font-weight:500;min-height:0;display:flex;justify-content:space-between}</style>
+.ph h1{margin:.5em 0 .1em}.lk{box-shadow:none;width:100%;text-align:left;background:none;color:var(--tx);border:0;border-top:1px solid var(--bd);border-radius:0;padding:14px 0;font-weight:500;min-height:0;display:flex;justify-content:space-between}.lk:hover{transform:none;box-shadow:none;background:var(--pri-soft)}</style>
 <div class="card ph"><label for="foto-input">{% avatar user.pk nome foto_em 96 %}<span class="cam">📷</span></label>
 <input type="file" id="foto-input" accept="image/*" hidden>
 <h1>{{ nome }}</h1>

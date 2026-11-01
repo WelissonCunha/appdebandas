@@ -6,20 +6,20 @@
 .bolha .h{font-size:.7rem;opacity:.7;margin-top:3px}.bolha .tx{white-space:pre-wrap;word-break:break-word}
 .bolha form{display:inline}.bolha .x{background:none;color:inherit;min-height:0;padding:0 4px;font-size:.7rem;opacity:.7;font-weight:500}
 .comp{position:sticky;bottom:calc(66px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;background:var(--bg);padding:8px 0}
-.comp textarea{flex:1;resize:none;max-height:120px}
+.comp textarea{flex:1;resize:none;max-height:120px;min-height:46px;height:46px}
 .men{border-radius:6px;padding:0 4px;background:var(--pri-soft);color:var(--pri);font-weight:600}.minha .men{background:#ffffff33;color:#fff}
 .sug{position:absolute;left:0;right:0;bottom:100%;background:var(--card);border:1px solid var(--bd);border-radius:14px;box-shadow:var(--sh);max-height:210px;overflow:auto;margin-bottom:6px}.sug[hidden]{display:none}
 .sug button{display:flex;width:100%;gap:8px;justify-content:space-between;align-items:center;background:none;color:var(--tx);box-shadow:none;border-radius:0;min-height:46px;text-align:left;font-weight:500}.sug button:hover{background:var(--pri-soft);transform:none;box-shadow:none}
 .divnova{display:flex;align-items:center;gap:10px;color:var(--pri);font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin:6px 0 12px}.divnova::before,.divnova::after{content:"";flex:1;height:1px;background:var(--pri);opacity:.35}</style>
 {% if bandas|length > 1 %}<div class="seg">{% for b in bandas %}<a class="{% if b.pk == banda.pk %}on{% endif %}" href="?banda={{ b.pk }}">{{ b.nome }}{% if b.nao_lidas %} <span class="tag recusado">{{ b.nao_lidas }}</span>{% endif %}</a>{% endfor %}</div>{% endif %}
-{% if banda %}<h2>💬 Mensagens · {{ banda.nome }}</h2>
+{% if banda %}<h2>💬 Mensagens · {{ banda.nome }} <span class="mut" style="font-weight:400">· use @ para mencionar</span></h2>
 <div id="chat">{% for m in msgs %}{% if m.pk == primeira_nova %}<div class="divnova" id="novas">Novas mensagens</div>{% endif %}<div class="lm {% if m.autor_id == user.id %}minha{% endif %}">
 {% if m.autor_id != user.id %}{% avatar m.autor_id m.autor.get_full_name|default:m.autor.username m.foto_em 34 %}{% endif %}
 <div class="bolha"><div class="n">{{ m.autor.get_full_name|default:m.autor.username|default:"Ex-membro" }}</div><div class="tx">{{ m.texto|mencoes }}</div>
 <div class="h">{{ m.criado|date:"d/m H:i" }}{% if m.autor_id == user.id or lider_banda %} · <form method="post" action="{% url 'mensagem_excluir' m.pk %}" onsubmit="return confirm('Apagar esta mensagem?')">{% csrf_token %}<button class="x">apagar</button></form>{% endif %}</div></div></div>
 {% empty %}<p class="mut">Nenhuma mensagem ainda. Comece a conversa!</p>{% endfor %}</div>
 <form class="comp" method="post" action="{% url 'mensagem_enviar' %}">{% csrf_token %}<input type="hidden" name="banda" value="{{ banda.pk }}">
-<div class="sug" id="sug" hidden></div><textarea name="texto" rows="1" maxlength="1000" placeholder="Escreva uma mensagem... use @ para mencionar" required></textarea><button>Enviar</button></form>
+<div class="sug" id="sug" hidden></div><textarea name="texto" rows="1" maxlength="1000" placeholder="Escreva uma mensagem" required></textarea><button>Enviar</button></form>
 <script>
 const chat = document.getElementById("chat"), fim = () => window.scrollTo(0, document.body.scrollHeight);
 const nv = document.getElementById("novas");

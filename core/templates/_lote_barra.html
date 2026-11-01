@@ -1,7 +1,7 @@
 <form id="form-lote" method="post" action="{{ acao }}" class="barra-lote">{% csrf_token %}
 <label><input type="checkbox" id="sel-todos"> Selecionar todos</label>
 <button class="no" disabled>🗑️ Excluir selecionados (0)</button></form>
-<style>.barra-lote{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0 0 12px}.barra-lote label{cursor:pointer}</style>
+<style>.barra-lote{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:0}.barra-lote label{cursor:pointer}</style>
 <script>
 (function () {
   const f = document.getElementById("form-lote"), todos = document.getElementById("sel-todos"), btn = f.querySelector("button");

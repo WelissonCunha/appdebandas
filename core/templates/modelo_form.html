@@ -5,8 +5,8 @@
 .fn .topo{display:flex;gap:8px;align-items:flex-end}.fn .topo>div{flex:1}
 .fn label.t{display:block;font-size:.72rem;font-weight:700;color:var(--mut);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1.5px solid var(--bd);border-radius:99px;background:var(--card);cursor:pointer;font-size:.9rem}
-.chip:has(input:checked){border-color:var(--pri);background:var(--pri-soft);color:var(--pri);font-weight:600}</style>
+label.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1.5px solid var(--bd);border-radius:99px;background:var(--card);cursor:pointer;font-size:.9rem}
+label.chip:has(input:checked){border-color:var(--pri);background:var(--pri-soft);color:var(--pri);font-weight:600}</style>
 <a class="voltar" href="{% url 'modelos' %}"><span class="seta"><svg class="ic"><use href="#i-back"/></svg></span>Voltar aos modelos</a>
 <div class="card fm"><h2>✏️ Modelo · {{ modelo.banda.nome }}</h2>
 <form method="post">{% csrf_token %}<input type="hidden" name="n_funcoes" id="n_funcoes" value="{{ atuais|length }}">
